@@ -1,14 +1,14 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 // 1. IMPORT LAYOUTS
-import Layout from './components/Layout';               // Layout untuk User/Anggota
+import Layout from './components/layout';               // Layout untuk User/Anggota
 import AdminLayout from './components/AdminLayout';       // Layout untuk Admin/Bendahara
 import KetuaLayout from './components/KetuaLayout';   // Layout untuk ketua
 
 // 2. IMPORT HALAMAN - USER / ANGGOTA
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import Simpananku from './pages/Simpananku';
+import Login from './pages/login';
+import Dashboard from './pages/dashboard';
+import Simpananku from './pages/simpananku';
 import Pinjaman from './pages/pinjaman';
 import Profil from './pages/profil';
 import Ajukan from './pages/ajukan';
