@@ -1,32 +1,46 @@
-import { Calendar, User, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Calendar, User, Clock, CheckCircle } from 'lucide-react';
+import api from '../services/api';
+import { formatRupiah, formatTanggal } from '../utils/format';
 
 export default function Dashboard() {
-  const transaksi = [
-    { tgl: '12 Jul 2026', desc: 'Simpanan Wajib Bulan Juli', cat: 'WAJIB', amt: '+Rp 200.000', stat: 'Berhasil', type: 'in' },
-    { tgl: '11 Jul 2026', desc: 'Simpanan Pokok', cat: 'POKOK', amt: '+Rp 500.000', stat: 'Berhasil', type: 'in' },
-    { tgl: '05 Jul 2026', desc: 'Top Up Simpanan Sukarela', cat: 'SUKARELA', amt: '+Rp 1.000.000', stat: 'Berhasil', type: 'in' },
-    { tgl: '02 Jul 2026', desc: 'Penarikan Simpanan Sukarela', cat: 'PENARIKAN', amt: '-Rp 500.000', stat: 'Berhasil', type: 'out' },
-    { tgl: '28 Jun 2026', desc: 'Pengajuan Pinjaman #LN-2026-001', cat: 'PINJAMAN', amt: 'Rp 5.000.000', stat: 'Menunggu Verifikasi', type: 'pending' },
-    { tgl: '25 Jun 2026', desc: 'Cicilan Pinjaman #P-002', cat: 'CICILAN', amt: '+Rp 500.000', stat: 'Berhasil', type: 'in' },
-  ];
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    api.get('/dashboard')
+      .then((res) => setData(res.data))
+      .catch(() => setError('Gagal memuat data dashboard. Coba muat ulang halaman.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return <div className="text-center py-20 text-slate-400 text-sm">Memuat data...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center py-20 text-rose-500 text-sm">{error}</div>;
+  }
+
+  const { profil, total_simpanan, sub_saldo, aktivitas_terakhir } = data;
 
   return (
     <div className="space-y-6 animate-fade-in">
-      
+
       {/* 1. CARD GRAND TOTAL GRADASI */}
       <div className="bg-[#002347] rounded-3xl p-8 text-white shadow-lg relative overflow-hidden">
         <div className="absolute right-0 top-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-2xl pointer-events-none"></div>
         <p className="text-sm text-blue-100 font-medium">Total Simpanan Anda</p>
-        <h2 className="text-4xl sm:text-5xl font-bold tracking-tight my-4">Rp 12.500.000</h2>
+        <h2 className="text-4xl sm:text-5xl font-bold tracking-tight my-4">{formatRupiah(total_simpanan)}</h2>
         <div className="flex flex-wrap gap-6 text-xs text-blue-100 border-t border-white/10 pt-4 mt-2">
-          <div className="flex items-center gap-2"><Calendar size={14} /> Bergabung: Jan 2021</div>
-          <div className="flex items-center gap-2"><User size={14} /> ID Anggota: ANG-2024-001</div>
+          <div className="flex items-center gap-2"><Calendar size={14} /> Bergabung: {formatTanggal(profil.tanggal_bergabung)}</div>
+          <div className="flex items-center gap-2"><User size={14} /> ID Anggota: {profil.id_anggota}</div>
         </div>
       </div>
 
       {/* 2. SUB-SALDO GRID 3 KOLOM */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Pokok */}
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
           <div className="flex justify-between items-start">
             <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">🏛️</div>
@@ -34,10 +48,9 @@ export default function Dashboard() {
           </div>
           <div className="mt-4">
             <p className="text-xs text-slate-400">Simpanan Pokok</p>
-            <h4 className="text-lg font-bold text-slate-800 mt-1">Rp 500.000</h4>
+            <h4 className="text-lg font-bold text-slate-800 mt-1">{formatRupiah(sub_saldo.pokok)}</h4>
           </div>
         </div>
-        {/* Wajib */}
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
           <div className="flex justify-between items-start">
             <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">🐷</div>
@@ -45,10 +58,9 @@ export default function Dashboard() {
           </div>
           <div className="mt-4">
             <p className="text-xs text-slate-400">Simpanan Wajib</p>
-            <h4 className="text-lg font-bold text-slate-800 mt-1">Rp 2.000.000</h4>
+            <h4 className="text-lg font-bold text-slate-800 mt-1">{formatRupiah(sub_saldo.wajib)}</h4>
           </div>
         </div>
-        {/* Sukarela */}
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
           <div className="flex justify-between items-start">
             <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">💎</div>
@@ -56,7 +68,7 @@ export default function Dashboard() {
           </div>
           <div className="mt-4">
             <p className="text-xs text-slate-400">Simpanan Sukarela</p>
-            <h4 className="text-lg font-bold text-slate-800 mt-1">Rp 10.000.000</h4>
+            <h4 className="text-lg font-bold text-slate-800 mt-1">{formatRupiah(sub_saldo.sukarela)}</h4>
           </div>
         </div>
       </div>
@@ -68,12 +80,8 @@ export default function Dashboard() {
             <h3 className="text-base font-bold text-slate-800">Aktivitas Terakhir</h3>
             <p className="text-xs text-slate-400 mt-0.5">Semua jenis transaksi terbaru Anda</p>
           </div>
-          <button className="text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 font-medium px-4 py-2 rounded-xl transition-colors">
-            Lihat Semua
-          </button>
         </div>
 
-        {/* Wrapper Tabel agar Responsif di HP */}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -86,28 +94,31 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 text-sm text-slate-700">
-              {transaksi.map((item, idx) => (
+              {aktivitas_terakhir.length === 0 && (
+                <tr><td colSpan={5} className="py-6 text-center text-slate-400 text-xs">Belum ada aktivitas.</td></tr>
+              )}
+              {aktivitas_terakhir.map((item, idx) => (
                 <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="py-4 text-xs text-slate-400 whitespace-nowrap">{item.tgl}</td>
-                  <td className="py-4 font-medium text-slate-800 max-w-xs">{item.desc}</td>
+                  <td className="py-4 text-xs text-slate-400 whitespace-nowrap">{formatTanggal(item.tanggal)}</td>
+                  <td className="py-4 font-medium text-slate-800 max-w-xs">{item.deskripsi}</td>
                   <td className="py-4">
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
-                      {item.cat}
+                      {item.kategori}
                     </span>
                   </td>
                   <td className={`py-4 font-semibold whitespace-nowrap ${
-                    item.type === 'in' ? 'text-emerald-600' : item.type === 'out' ? 'text-rose-600' : 'text-slate-700'
+                    item.arah === 'in' ? 'text-emerald-600' : item.arah === 'out' ? 'text-rose-600' : 'text-slate-700'
                   }`}>
-                    {item.amt}
+                    {item.arah === 'in' ? '+' : item.arah === 'out' ? '-' : ''}{formatRupiah(item.jumlah)}
                   </td>
                   <td className="py-4 whitespace-nowrap">
-                    {item.type === 'pending' ? (
+                    {item.arah === 'pending' ? (
                       <span className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full w-fit">
-                        <Clock size={12} /> {item.stat}
+                        <Clock size={12} /> {item.status}
                       </span>
                     ) : (
                       <span className="flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full w-fit">
-                        <CheckCircle size={12} /> {item.stat}
+                        <CheckCircle size={12} /> {item.status}
                       </span>
                     )}
                   </td>
