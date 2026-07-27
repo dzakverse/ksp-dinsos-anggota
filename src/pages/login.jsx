@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Lock, User, HelpCircle, ShieldCheck } from 'lucide-react';
 import bgGedung from "../assets/dinsos-jateng.png";
-import { usersData } from "../data/user";
+import api from "../services/api";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -16,31 +16,34 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
-const handleLogin = (e) => {
+const handleLogin = async (e) => {
     e.preventDefault();
     setErrorMsg('');
 
-    // Cari akun yang cocok di data lokal
-    const foundUser = usersData.find(
-      (user) => user.username === username && user.password === password
-    );
+    try {
+      // Panggil backend Laravel: POST /api/login
+      const { data } = await api.post('/login', {
+        nip: username,
+        password: password,
+      });
 
-    // Jika akun ditemukan
-    if (foundUser) {
-      localStorage.setItem('token', 'dummy-token-12345');
-      localStorage.setItem('userRole', foundUser.role);
-      localStorage.setItem('userName', foundUser.nama);
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userRole', data.user.role);
+      localStorage.setItem('userName', data.user.nama);
 
       // Redirect otomatis sesuai Role
-      if (foundUser.role === 'ANGGOTA') {
+      if (data.user.role === 'ANGGOTA') {
         navigate('/dashboard');
-      } else if (foundUser.role === 'BENDAHARA') {
-        navigate('/admin/verifikasi'); // Atau /admin/dashboard
-      } else if (foundUser.role === 'KETUA') {
-        navigate('/ketua/dashboard'); // <-- SEKARANG KETUA PUNYA RUMAH SENDIRI! 🚀
+      } else if (data.user.role === 'BENDAHARA') {
+        navigate('/admin/verifikasi');
+      } else if (data.user.role === 'KETUA') {
+        navigate('/ketua/dashboard');
       }
-    } else {
-      setErrorMsg('Username atau kata sandi salah!');
+    } catch (err) {
+      // Laravel validation error balikin pesan di err.response.data.message
+      setErrorMsg(
+        err.response?.data?.message || 'Username atau kata sandi salah!'
+      );
     }
   };
   
