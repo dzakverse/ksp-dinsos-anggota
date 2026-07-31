@@ -17,9 +17,15 @@ export default function KetuaLayout() {
   const [isHovered, setIsHovered] = useState(false);
 
   const currentUser = {
-    name: 'Drs. H. Ahmad',
+    name: localStorage.getItem('userName') || 'Ketua',
     role: 'KETUA',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=150&auto=format&fit=crop'
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userName');
+    navigate('/login', { replace: true });
   };
 
   const navItems = [
@@ -103,7 +109,7 @@ export default function KetuaLayout() {
 
               <button 
                 type="button"
-                onClick={() => navigate('/login')}
+                onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-slate-400 hover:text-rose-400 hover:bg-[#0F1935] rounded-xl transition-colors cursor-pointer"
               >
                 <LogOut size={18} />
@@ -120,7 +126,7 @@ export default function KetuaLayout() {
               </button>
               <button 
                 title="Keluar"
-                onClick={() => navigate('/login')}
+                onClick={handleLogout}
                 className="p-2.5 text-slate-400 hover:text-rose-400 hover:bg-[#0F1935] rounded-xl cursor-pointer"
               >
                 <LogOut size={18} />
@@ -140,11 +146,9 @@ export default function KetuaLayout() {
               <div className="text-xs font-bold text-slate-800">{currentUser.name}</div>
               <div className="text-[10px] font-bold text-amber-600 tracking-wider uppercase">{currentUser.role}</div>
             </div>
-            <img 
-              src={currentUser.avatar} 
-              alt={currentUser.name} 
-              className="w-9 h-9 rounded-full object-cover border-2 border-amber-400"
-            />
+            <div className="w-9 h-9 rounded-full bg-[#081028] border-2 border-amber-400 flex items-center justify-center text-amber-400 font-bold text-sm">
+              {currentUser.name.charAt(0)}
+            </div>
           </div>
         </header>
 

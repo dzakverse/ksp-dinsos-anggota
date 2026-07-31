@@ -51,6 +51,17 @@ const ProtectedAdminRoute = ({ children }) => {
   return children;
 };
 
+const ProtectedKetuaRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  const role = localStorage.getItem('userRole');
+
+  if (!token) return <Navigate to="/login" replace />;
+  // Hanya KETUA yang boleh masuk (Bendahara tidak boleh akses fitur eksekutif Ketua)
+  if (role !== 'KETUA') return <Navigate to="/dashboard" replace />;
+
+  return children;
+};
+
 export default function App() {
   return (
     <Router>
@@ -104,7 +115,14 @@ export default function App() {
         <Route path="*" element={<Navigate to="/login" replace />} />
 
         {/* ROUTE KETUA */}
-        <Route path="/ketua" element={<KetuaLayout />}>
+        <Route
+          path="/ketua"
+          element={
+            <ProtectedKetuaRoute>
+              <KetuaLayout />
+            </ProtectedKetuaRoute>
+          }
+        >
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<DashboardKetua />} />
           <Route path="kebijakan" element={<KendaliKebijakan/>} />

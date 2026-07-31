@@ -1,33 +1,33 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  ShieldCheck, 
-  KeyRound, 
-  CheckCircle2, 
-  Pencil,
-  Lock
-} from 'lucide-react';
+import { ShieldCheck, Lock, Pencil, CheckCircle2 } from 'lucide-react';
+import api from '../../services/api';
+
+const PRIVILEGES = [
+  'Persetujuan Pinjaman Final',
+  'Manajemen Kebijakan',
+  'Emergency Bypass',
+  'Kelola Pengurus & Anggota',
+];
 
 export default function ProfileKetua() {
   const navigate = useNavigate();
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Data Profil Ketua
-  const profileData = {
-    nama: 'Budi Santoso', // Sesuaikan nama
-    role: 'Chairman / Ketua',
-    nip: '19850101XXXXXXXX',
-    privileges: [
-      'Persetujuan Pinjaman Final',
-      'Manajemen Kebijakan',
-      'Hak Veto',
-      'Akses Audit'
-    ]
-  };
+  useEffect(() => {
+    api.get('/profile')
+      .then((res) => setProfile(res.data))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return <div className="text-center py-20 text-slate-400 text-sm">Memuat data...</div>;
+  }
 
   return (
     <div className="space-y-8 max-w-5xl pb-16 font-sans">
-      
-      {/* HEADER PAGE */}
+
       <div>
         <h1 className="text-2xl font-black text-slate-900 tracking-tight">
           Informasi Profil
@@ -37,107 +37,89 @@ export default function ProfileKetua() {
         </p>
       </div>
 
-      {/* MAIN GRID CONTENT */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-        
-        {/* ================= LEFT COLUMN: AVATAR & IDENTITAS ================= */}
-        <div className="md:col-span-5 bg-white border border-slate-200/80 rounded-3xl p-8 text-center shadow-xs space-y-6">
-          
-          {/* Avatar Box with Edit Badge */}
-          <div className="relative w-32 h-32 mx-auto">
-            <img 
-              src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=300&q=80" 
-              alt="Foto Profil" 
-              className="w-full h-full object-cover rounded-full ring-4 ring-slate-100 shadow-md"
-            />
-            <button 
-              type="button"
-              title="Ubah Foto Profil"
-              className="absolute bottom-1 right-1 w-8 h-8 bg-slate-900 hover:bg-slate-800 text-white rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer border-2 border-white"
-            >
-              <Pencil size={14} />
-            </button>
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 md:p-10">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+
+          <div className="md:col-span-4 flex flex-col items-center text-center pr-0 md:pr-6 border-b md:border-b-0 md:border-r border-slate-100 pb-8 md:pb-0">
+            <div className="relative mb-4">
+              <div className="w-28 h-28 rounded-full bg-[#081028] flex items-center justify-center text-amber-400 font-black text-4xl border-4 border-amber-400/60 shadow-inner">
+                {profile?.nama?.charAt(0) || 'K'}
+              </div>
+            </div>
+
+            <h2 className="text-xl font-black text-slate-900 tracking-tight">{profile?.nama}</h2>
+            <div className="mt-1.5 inline-block bg-amber-50 text-amber-700 font-bold text-[11px] px-3 py-1 rounded-full border border-amber-200/60">
+              Chairman / Ketua
+            </div>
+
+            <div className="w-full border-t border-slate-100 my-6"></div>
+
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
+                NOMOR INDUK PEGAWAI
+              </span>
+              <span className="text-sm font-extrabold text-slate-800 font-mono tracking-wider">
+                {profile?.nip || '-'}
+              </span>
+            </div>
           </div>
 
-          {/* Nama & Role Badge */}
-          <div className="space-y-2">
-            <h2 className="text-xl font-black text-slate-900">{profileData.nama}</h2>
-            <span className="inline-block bg-amber-100 text-amber-900 text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-wider">
-              {profileData.role}
-            </span>
-          </div>
+          <div className="md:col-span-8 space-y-8 pl-0 md:pl-4">
 
-          <div className="pt-6 border-t border-slate-100 space-y-1">
-            <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
-              NOMOR INDUK PEGAWAI
+            <div>
+              <div className="flex items-center gap-2 mb-4 pb-2 border-b border-slate-100">
+                <ShieldCheck size={20} className="text-slate-900" />
+                <h3 className="font-bold text-base text-slate-900">Pengaturan Keamanan</h3>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
+                <div className="space-y-1 max-w-md">
+                  <h4 className="font-bold text-xs text-slate-800">Kata Sandi Akun</h4>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    Disarankan untuk mengubah kata sandi secara berkala demi keamanan data keuangan.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => navigate('/ketua/profile/ubah-password')}
+                  className="bg-[#0A1128] hover:bg-slate-800 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 cursor-pointer shadow-sm">
+                  <Lock size={14} />
+                  <span>Ubah Password</span>
+                </button>
+              </div>
             </div>
-            <div className="text-sm font-black text-slate-800 tracking-wider">
-              {profileData.nip}
+
+            <div>
+              <div className="flex items-center gap-2 mb-4 pb-2 border-b border-slate-100">
+                <Lock size={18} className="text-slate-900" />
+                <h3 className="font-bold text-base text-slate-900">Hak Akses Eksekutif</h3>
+              </div>
+
+              <div className="space-y-3">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
+                  PRIVILESE SAAT INI
+                </span>
+
+                <div className="space-y-2.5">
+                  {PRIVILEGES.map((item, index) => (
+                    <div key={index} className="flex items-center gap-2.5 text-xs font-semibold text-slate-700">
+                      <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
+
           </div>
 
         </div>
-
-        {/* ================= RIGHT COLUMN: SECURITY & PRIVILEGES ================= */}
-        <div className="md:col-span-7 space-y-8">
-          
-          {/* BAGIAN 1: PENGATURAN KEAMANAN */}
-          <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-5">
-            <div className="flex items-center gap-2.5 text-slate-900 font-extrabold text-sm pb-3 border-b border-slate-100">
-              <Lock size={18} className="text-slate-800" />
-              <span>Pengaturan Keamanan</span>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <h3 className="text-xs font-black text-slate-900">Kata Sandi Akun</h3>
-                <p className="text-[11px] text-slate-500 max-w-xs leading-relaxed">
-                  Terakhir diubah 3 bulan yang lalu. Disarankan untuk mengubah kata sandi secara berkala demi keamanan data keuangan.
-                </p>
-              </div>
-
-              {/* NAVIGASI KE HALAMAN TERPISAH UBAH PASSWORD */}
-              <button
-                type="button"
-                onClick={() => navigate('/ketua/profile/ubah-password')}
-                className="bg-[#081028] hover:bg-slate-800 text-white font-extrabold text-xs px-4 py-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shrink-0 shadow-xs"
-              >
-                <KeyRound size={15} />
-                <span>Ubah Password</span>
-              </button>
-            </div>
-          </div>
-
-          {/* BAGIAN 2: ROLE & AKSES SISTEM */}
-          <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-5">
-            <div className="flex items-center gap-2.5 text-slate-900 font-extrabold text-sm pb-3 border-b border-slate-100">
-              <ShieldCheck size={18} className="text-slate-800" />
-              <span>Role & Akses Sistem</span>
-            </div>
-
-            <div className="space-y-3">
-              <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
-                PRIVILESE SAAT INI
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                {profileData.privileges.map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-2.5 text-xs font-bold text-slate-800">
-                    <CheckCircle2 size={16} className="text-emerald-500 shrink-0 fill-emerald-50" />
-                    <span>{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-        </div>
-
       </div>
 
-      {/* FOOTER NOTE */}
-      <div className="pt-8 border-t border-slate-200/60 text-center text-[11px] font-medium text-slate-400">
-        © 2026 Dinas Sosial Financial Management System. Seluruh akses sistem dicatat untuk audit internal.
+      <div className="border-t border-slate-200/60 pt-6 text-center">
+        <p className="text-[11px] text-slate-400 font-medium">
+          © 2026 Dinas Sosial Financial Management System. Seluruh akses sistem dicatat untuk audit internal.
+        </p>
       </div>
 
     </div>
