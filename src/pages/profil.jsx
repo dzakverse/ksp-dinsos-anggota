@@ -103,7 +103,7 @@ export default function Profil() {
           <div>
             <div className="flex items-center gap-2 pb-6">
               <Contact size={20} className="text-blue-600" />
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Kontak & Rekening</h3>
+              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Kontak</h3>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
