@@ -45,6 +45,10 @@ export default function PengurusAnggota() {
     setLoadingPengurus(true);
     api.get('/ketua/pengurus', { params: { search: searchPengurus || undefined } })
       .then((res) => setListPengurus(res.data))
+      .catch((err) => {
+        console.error("Gagal memuat data pengurus:", err.response?.data || err.message);
+        showToast("Gagal mengambil data pengurus.");
+      })
       .finally(() => setLoadingPengurus(false));
   };
 
@@ -52,9 +56,13 @@ export default function PengurusAnggota() {
     setLoadingAnggota(true);
     api.get('/admin/anggota', { params: { search: searchAnggota || undefined, per_page: 10 } })
       .then((res) => setAnggotaData(res.data))
+      .catch((err) => {
+        console.error("Gagal memuat data anggota:", err.response?.data || err.message);
+        showToast("Gagal mengambil data anggota.");
+      })
       .finally(() => setLoadingAnggota(false));
   };
-
+  
   useEffect(() => { loadPengurus(); }, [searchPengurus]);
   useEffect(() => { loadAnggota(); }, [searchAnggota]);
 
