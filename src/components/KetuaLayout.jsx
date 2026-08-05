@@ -7,7 +7,8 @@ import {
   Users, 
   User, 
   HelpCircle, 
-  LogOut 
+  LogOut,
+  Building2,
 } from 'lucide-react';
 
 export default function KetuaLayout() {
@@ -33,6 +34,7 @@ export default function KetuaLayout() {
     { label: 'Kendali Kebijakan', path: '/ketua/kebijakan', icon: SlidersHorizontal },
     { label: 'Persetujuan', path: '/ketua/persetujuan', icon: CheckSquare },
     { label: 'Pengurus & Anggota', path: '/ketua/pengurus', icon: Users },
+    { label: 'Kas Koperasi', path: '/ketua/kas', icon: Building2 },
     { label: 'Profile', path: '/ketua/profile', icon: User },
   ];
 
