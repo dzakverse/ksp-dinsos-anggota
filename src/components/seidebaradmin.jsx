@@ -39,6 +39,7 @@ export default function SidebarAdmin({ onHoverChange, isMobileOpen, setIsMobileO
     { path: '/admin/dashboard', label: 'Beranda', icon: LayoutDashboard },
     { path: '/admin/verifikasi', label: 'Verifikasi Pinjaman', icon: FileCheck },
     { path: '/admin/anggota', label: 'Data & Anggota', icon: Users },
+    { path: '/admin/kas', label: 'Kas Koperasi', icon: Building2 },
     { path: '/admin/profile', label: 'Profile', icon: User },
   ];
 

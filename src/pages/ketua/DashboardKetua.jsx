@@ -9,7 +9,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import api from '../../services/api';
-import { formatRupiah } from '../../utils/format';
+import { formatRupiah, formatWaktuAktivitas } from '../../utils/format';
 
 export default function DashboardKetua() {
   const [data, setData] = useState(null);
@@ -83,13 +83,14 @@ export default function DashboardKetua() {
               <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-400 tracking-wider">
                 <th className="pb-3 font-semibold">ANGGOTA</th>
                 <th className="pb-3 font-semibold">TRANSAKSI</th>
+                <th className="pb-3 font-semibold">WAKTU</th>
                 <th className="pb-3 font-semibold">JUMLAH</th>
                 <th className="pb-3 font-semibold">STATUS</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 text-sm text-slate-700">
               {aktivitas_terbaru.length === 0 && (
-                <tr><td colSpan={4} className="py-6 text-center text-slate-400 text-xs">Belum ada aktivitas.</td></tr>
+                <tr><td colSpan={5} className="py-6 text-center text-slate-400 text-xs">Belum ada aktivitas.</td></tr>
               )}
               {aktivitas_terbaru.map((item, idx) => (
                 <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
@@ -98,6 +99,7 @@ export default function DashboardKetua() {
                     <div className="text-[11px] text-slate-400">{item.nip}</div>
                   </td>
                   <td className="py-4 font-medium">{item.jenis}</td>
+                  <td className="py-4 text-xs text-slate-400 whitespace-nowrap">{formatWaktuAktivitas(item.waktu)}</td>
                   <td className={`py-4 font-semibold whitespace-nowrap ${
                     item.tipe === 'in' ? 'text-emerald-600' : item.tipe === 'out' ? 'text-rose-600' : 'text-slate-700'
                   }`}>

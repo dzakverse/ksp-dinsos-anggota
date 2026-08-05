@@ -12,9 +12,21 @@ import {
   X,
   Info,
   CheckCircle2,
+  MinusCircle,
+  PlusCircle,
+  FileText,
+  Clock,
+  Calendar,
 } from 'lucide-react';
 import api from '../../services/api';
-import { formatRupiah } from '../../utils/format';
+import { formatRupiah, formatTanggal } from '../../utils/format';
+
+const STATUS_PINJAMAN = {
+  MENUNGGU: { label: 'Menunggu Verifikasi', cls: 'bg-amber-50 text-amber-600 border-amber-200' },
+  DISETUJUI_BENDAHARA: { label: 'Menunggu Persetujuan Ketua', cls: 'bg-blue-50 text-blue-600 border-blue-200' },
+  DISETUJUI: { label: 'Aktif / Berjalan', cls: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
+  DITOLAK: { label: 'Ditolak', cls: 'bg-rose-50 text-rose-600 border-rose-200' },
+};
 
 export default function DetailAnggota() {
   const navigate = useNavigate();
@@ -24,14 +36,22 @@ export default function DetailAnggota() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // State Form Tambah Simpanan Manual
+  // Form Setor/Tarik Simpanan
+  const [tipeTransaksi, setTipeTransaksi] = useState('SETOR'); // 'SETOR' | 'TARIK'
   const [jenisSimpanan, setJenisSimpanan] = useState('WAJIB');
   const [nominalSetoran, setNominalSetoran] = useState('');
   const [keterangan, setKeterangan] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const [showModal, setShowModal] = useState(false);
+  const [formError, setFormError] = useState('');
   const [togglingStatus, setTogglingStatus] = useState(false);
+
+  // Modal Detail Cicilan Pinjaman
+  const [selectedPinjaman, setSelectedPinjaman] = useState(null);
+  const [payingCicilan, setPayingCicilan] = useState(null);
+  const [catatanBayar, setCatatanBayar] = useState('');
+  const [payingSubmitting, setPayingSubmitting] = useState(false);
 
   const fetchAnggota = () => {
     setLoading(true);
@@ -43,10 +63,17 @@ export default function DetailAnggota() {
 
   useEffect(() => { fetchAnggota(); }, [id]);
 
+  const saldoJenisSaatIni = anggota ? (anggota.saldo[jenisSimpanan.toLowerCase()] ?? 0) : 0;
+
   const handleOpenModal = (e) => {
     e.preventDefault();
-    if (!nominalSetoran) {
-      alert('Masukkan nominal setoran terlebih dahulu!');
+    setFormError('');
+    if (!nominalSetoran || Number(nominalSetoran) <= 0) {
+      setFormError('Masukkan nominal yang valid terlebih dahulu!');
+      return;
+    }
+    if (tipeTransaksi === 'TARIK' && Number(nominalSetoran) > saldoJenisSaatIni) {
+      setFormError(`Saldo ${jenisSimpanan} anggota ini tidak mencukupi (tersedia ${formatRupiah(saldoJenisSaatIni)}).`);
       return;
     }
     setShowModal(true);
@@ -55,7 +82,11 @@ export default function DetailAnggota() {
   const handleProsesSekarang = async () => {
     setSubmitting(true);
     try {
-      await api.post(`/admin/anggota/${id}/simpanan`, {
+      const endpoint = tipeTransaksi === 'SETOR'
+        ? `/admin/anggota/${id}/simpanan`
+        : `/admin/anggota/${id}/simpanan/tarik`;
+
+      await api.post(endpoint, {
         jenis: jenisSimpanan,
         jumlah: Number(nominalSetoran),
         keterangan,
@@ -63,9 +94,10 @@ export default function DetailAnggota() {
       setShowModal(false);
       setNominalSetoran('');
       setKeterangan('');
-      fetchAnggota(); // refresh saldo
-    } catch {
-      alert('Gagal menyimpan transaksi. Coba lagi.');
+      fetchAnggota();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Gagal menyimpan transaksi. Coba lagi.');
+      setShowModal(false);
     } finally {
       setSubmitting(false);
     }
@@ -85,6 +117,40 @@ export default function DetailAnggota() {
     }
   };
 
+  const handleBayarCicilan = async () => {
+    if (!catatanBayar.trim()) {
+      alert('Catatan wajib diisi sebelum konfirmasi pembayaran.');
+      return;
+    }
+    setPayingSubmitting(true);
+    try {
+      const { data: updatedCicilan } = await api.post(`/admin/cicilan/${payingCicilan.id}/bayar`, {
+        catatan: catatanBayar,
+      });
+
+      // Update state lokal biar UI langsung refresh tanpa perlu reload manual
+      setSelectedPinjaman((prev) => ({
+        ...prev,
+        cicilan: prev.cicilan.map((c) => (c.id === updatedCicilan.id ? updatedCicilan : c)),
+      }));
+      setAnggota((prev) => ({
+        ...prev,
+        daftar_pinjaman: prev.daftar_pinjaman.map((p) =>
+          p.id === selectedPinjaman.id
+            ? { ...p, cicilan: p.cicilan.map((c) => (c.id === updatedCicilan.id ? updatedCicilan : c)) }
+            : p
+        ),
+      }));
+
+      setPayingCicilan(null);
+      setCatatanBayar('');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Gagal mencatat pembayaran.');
+    } finally {
+      setPayingSubmitting(false);
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-20 text-slate-400 text-sm">Memuat data...</div>;
   }
@@ -95,7 +161,7 @@ export default function DetailAnggota() {
   const isAktif = anggota.status_keanggotaan === 'AKTIF';
 
   return (
-    <div className="space-y-6 max-w-6xl relative">
+    <div className="space-y-6 max-w-6xl relative pb-12">
 
       <div>
         <button
@@ -162,12 +228,42 @@ export default function DetailAnggota() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
         <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-          <div className="p-4 sm:p-5 bg-blue-50/40 border-b border-slate-100 flex items-center gap-2">
-            <Send size={16} className="text-slate-800" />
-            <h2 className="text-sm font-bold text-slate-800">Tambah Simpanan Manual</h2>
+          <div className="p-4 sm:p-5 bg-blue-50/40 border-b border-slate-100 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Send size={16} className="text-slate-800" />
+              <h2 className="text-sm font-bold text-slate-800">Kelola Simpanan Manual</h2>
+            </div>
+
+            {/* TOGGLE SETOR / TARIK */}
+            <div className="flex bg-white rounded-xl border border-slate-200 p-1">
+              <button
+                type="button"
+                onClick={() => { setTipeTransaksi('SETOR'); setFormError(''); }}
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  tipeTransaksi === 'SETOR' ? 'bg-emerald-600 text-white' : 'text-slate-500'
+                }`}
+              >
+                <PlusCircle size={13} /> Setor
+              </button>
+              <button
+                type="button"
+                onClick={() => { setTipeTransaksi('TARIK'); setFormError(''); }}
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  tipeTransaksi === 'TARIK' ? 'bg-rose-600 text-white' : 'text-slate-500'
+                }`}
+              >
+                <MinusCircle size={13} /> Tarik
+              </button>
+            </div>
           </div>
 
           <form onSubmit={handleOpenModal} className="p-5 sm:p-6 space-y-4">
+            {formError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs font-medium text-rose-700">
+                {formError}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Pilih Jenis Simpanan</label>
@@ -180,10 +276,17 @@ export default function DetailAnggota() {
                   <option value="WAJIB">Simpanan Wajib</option>
                   <option value="SUKARELA">Simpanan Sukarela</option>
                 </select>
+                {tipeTransaksi === 'TARIK' && (
+                  <p className="text-[10px] text-slate-400 font-medium mt-1.5">
+                    Saldo tersedia: {formatRupiah(saldoJenisSaatIni)}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Nominal Setoran (Rp)</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Nominal {tipeTransaksi === 'SETOR' ? 'Setoran' : 'Penarikan'} (Rp)
+                </label>
                 <input
                   type="number"
                   placeholder="Contoh: 100000"
@@ -198,7 +301,7 @@ export default function DetailAnggota() {
               <label className="block text-xs font-bold text-slate-700 mb-1.5">Keterangan / Catatan</label>
               <textarea
                 rows="4"
-                placeholder="Tuliskan alasan penambahan atau referensi setoran..."
+                placeholder="Tuliskan alasan transaksi atau referensi..."
                 value={keterangan}
                 onChange={(e) => setKeterangan(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-3 outline-none focus:border-amber-400 font-medium resize-none"
@@ -208,10 +311,12 @@ export default function DetailAnggota() {
             <div className="pt-2">
               <button
                 type="submit"
-                className="bg-[#0A1128] hover:bg-slate-800 text-white font-bold text-xs px-6 py-3 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs"
+                className={`font-bold text-xs px-6 py-3 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs text-white ${
+                  tipeTransaksi === 'SETOR' ? 'bg-[#0A1128] hover:bg-slate-800' : 'bg-rose-600 hover:bg-rose-700'
+                }`}
               >
                 <Send size={14} />
-                <span>Proses Tambah Saldo</span>
+                <span>Proses {tipeTransaksi === 'SETOR' ? 'Tambah' : 'Tarik'} Saldo</span>
               </button>
             </div>
           </form>
@@ -257,18 +362,73 @@ export default function DetailAnggota() {
 
       </div>
 
+      {/* SECTION: PENCATATAN PINJAMAN */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div className="p-4 sm:p-5 bg-blue-50/40 border-b border-slate-100 flex items-center gap-2">
+          <FileText size={16} className="text-slate-800" />
+          <h2 className="text-sm font-bold text-slate-800">Pencatatan Pinjaman</h2>
+        </div>
+
+        <div className="p-5 sm:p-6">
+          {(!anggota.daftar_pinjaman || anggota.daftar_pinjaman.length === 0) ? (
+            <p className="text-xs text-slate-400 text-center py-6">Anggota ini belum pernah mengajukan pinjaman.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {anggota.daftar_pinjaman.map((p) => {
+                const badge = STATUS_PINJAMAN[p.status];
+                const lunasCount = p.cicilan.filter((c) => c.status === 'LUNAS').length;
+                return (
+                  <div key={p.id} className="border border-slate-200 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-[10px] font-mono text-slate-400">#{p.kode}</p>
+                        <p className="text-lg font-black text-slate-900">{formatRupiah(p.jumlah)}</p>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${badge.cls}`}>
+                        {badge.label}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <span>Tenor {p.tenor_bulan} bulan</span>
+                      {p.status === 'DISETUJUI' && (
+                        <span className="font-bold text-slate-700">{lunasCount}/{p.cicilan.length} lunas</span>
+                      )}
+                    </div>
+
+                    {p.status === 'DISETUJUI' && p.cicilan.length > 0 && (
+                      <button
+                        onClick={() => setSelectedPinjaman(p)}
+                        className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                      >
+                        Detail & Konfirmasi Cicilan
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* MODAL KONFIRMASI SETOR/TARIK SIMPANAN */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border-t-4 border-amber-400 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border-t-4 border-amber-400 overflow-hidden">
 
             <div className="p-6 pb-4 flex items-start justify-between">
               <div className="flex items-start gap-3.5">
-                <div className="w-12 h-12 bg-slate-900 text-amber-400 rounded-2xl flex items-center justify-center shrink-0 shadow-sm">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
+                  tipeTransaksi === 'SETOR' ? 'bg-slate-900 text-amber-400' : 'bg-rose-600 text-white'
+                }`}>
                   <Wallet size={22} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">Konfirmasi Tambah Saldo</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Tinjau kembali detail setoran sebelum diproses.</p>
+                  <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">
+                    Konfirmasi {tipeTransaksi === 'SETOR' ? 'Tambah' : 'Tarik'} Saldo
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Tinjau kembali detail transaksi sebelum diproses.</p>
                 </div>
               </div>
               <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-700 p-1 rounded-lg transition-colors cursor-pointer">
@@ -289,7 +449,7 @@ export default function DetailAnggota() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between pb-3 border-b border-slate-200/50 text-xs">
-                  <span className="text-slate-500 font-medium">Nominal Setoran</span>
+                  <span className="text-slate-500 font-medium">Nominal {tipeTransaksi === 'SETOR' ? 'Setoran' : 'Penarikan'}</span>
                   <span className="text-xl font-black text-slate-900">{formatRupiah(nominalSetoran)}</span>
                 </div>
                 <div className="space-y-1 text-xs">
@@ -324,6 +484,103 @@ export default function DetailAnggota() {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DETAIL & KONFIRMASI CICILAN */}
+      {selectedPinjaman && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
+          <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+
+            <div className="p-6 border-b border-slate-100 flex items-start justify-between shrink-0">
+              <div>
+                <h3 className="text-lg font-extrabold text-slate-900">Detail Angsuran #{selectedPinjaman.kode}</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {formatRupiah(selectedPinjaman.jumlah)} &bull; Tenor {selectedPinjaman.tenor_bulan} bulan
+                </p>
+              </div>
+              <button onClick={() => setSelectedPinjaman(null)} className="text-slate-400 hover:text-slate-700 p-1 rounded-lg cursor-pointer">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {selectedPinjaman.cicilan.map((c) => {
+                const lunas = c.status === 'LUNAS';
+                return (
+                  <div
+                    key={c.id}
+                    className={`rounded-2xl border p-4 space-y-2 ${lunas ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase">Bulan ke-{c.cicilan_ke}</span>
+                      {lunas ? <CheckCircle2 size={16} className="text-emerald-600" /> : <Clock size={16} className="text-slate-400" />}
+                    </div>
+                    <p className="text-base font-black text-slate-900">{formatRupiah(c.jumlah)}</p>
+
+                    {lunas ? (
+                      <div className="text-[10px] text-emerald-700 space-y-0.5">
+                        <p className="flex items-center gap-1"><Calendar size={10} /> Dibayar {formatTanggal(c.tanggal_bayar)}</p>
+                        {c.catatan && <p className="italic">"{c.catatan}"</p>}
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-[10px] text-slate-400 flex items-center gap-1">
+                          <Calendar size={10} /> Jatuh tempo {formatTanggal(c.jatuh_tempo)}
+                        </p>
+                        <button
+                          onClick={() => { setPayingCicilan(c); setCatatanBayar(''); }}
+                          className="w-full py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-[11px] rounded-lg transition-colors cursor-pointer"
+                        >
+                          Bayar
+                        </button>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL KONFIRMASI BAYAR 1 CICILAN */}
+      {payingCicilan && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6">
+            <h3 className="text-base font-bold text-slate-900">Konfirmasi Pembayaran Angsuran</h3>
+            <p className="text-xs text-slate-500 mt-1">
+              Bulan ke-{payingCicilan.cicilan_ke} sebesar <strong>{formatRupiah(payingCicilan.jumlah)}</strong>
+            </p>
+
+            <div className="mt-4">
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">Catatan (Wajib)</label>
+              <textarea
+                rows={3}
+                value={catatanBayar}
+                onChange={(e) => setCatatanBayar(e.target.value)}
+                placeholder="Contoh: Dibayar tunai di kantor KSP tanggal 4 Agustus 2026"
+                className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-3 outline-none focus:border-amber-400 font-medium resize-none"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-5">
+              <button
+                onClick={() => setPayingCicilan(null)}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleBayarCicilan}
+                disabled={payingSubmitting}
+                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-2 cursor-pointer disabled:opacity-60"
+              >
+                <CheckCircle2 size={16} />
+                <span>{payingSubmitting ? 'Menyimpan...' : 'Konfirmasi Lunas'}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -3,14 +3,13 @@ import {
   Building2,
   Wallet,
   HandCoins,
-  PiggyBank,
-  Coins,
   ArrowUpRight,
   ArrowDownLeft,
   Clock,
+  ShieldCheck,
 } from 'lucide-react';
 import api from '../../services/api';
-import { formatRupiah } from '../../utils/format';
+import { formatRupiah, formatWaktuAktivitas } from '../../utils/format';
 
 export default function DashboardBendahara() {
   const [data, setData] = useState(null);
@@ -32,180 +31,93 @@ export default function DashboardBendahara() {
     return <div className="text-center py-20 text-rose-500 text-sm">{error}</div>;
   }
 
-  // Gunakan fallback default value ({}) agar tidak crash jika data null/undefined
-  const { 
-    total_kas = 0, 
-    total_simpanan_anggota = 0, 
-    total_pinjaman_aktif = 0, 
-    sub_saldo = {}, 
-    aktivitas_terbaru = [] 
-  } = data || {};
+  const { total_kas, total_simpanan_anggota, total_pinjaman_aktif, sub_saldo, jumlah_anggota_aktif, aktivitas_terbaru } = data;
 
   return (
-    <div className="space-y-8 animate-fade-in pb-10">
+    <div className="space-y-6 animate-fade-in">
 
-      {/* HEADER SALAM */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
-          Selamat Datang, {userName}
-        </h1>
-        <p className="text-xs text-slate-500 mt-1">
-          Berikut adalah ringkasan performa keuangan KSP Sejahtera hari ini.
-        </p>
+        <h1 className="text-2xl font-black text-slate-900 tracking-tight">Selamat Datang, {userName}</h1>
+        <p className="text-xs text-slate-500 mt-1">Ringkasan kondisi keuangan koperasi hari ini.</p>
       </div>
 
-      {/* 3 CARD RINGKASAN UTAMA (TOP ROW) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 relative overflow-hidden border-t-4 border-t-[#FABD00]">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
-              <Building2 size={20} />
-            </div>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Kas Koperasi</span>
-          </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">
-            {formatRupiah(total_kas)}
-          </div>
+      {/* CARD TOTAL KAS */}
+      <div className="bg-[#081028] rounded-3xl p-8 text-white shadow-lg relative overflow-hidden">
+        <div className="absolute right-0 top-0 w-64 h-64 bg-amber-400/10 rounded-full -mr-20 -mt-20 blur-2xl pointer-events-none"></div>
+        <p className="text-sm text-blue-100 font-medium">Total Kas Koperasi</p>
+        <h2 className="text-4xl sm:text-5xl font-black tracking-tight my-4">{formatRupiah(total_kas)}</h2>
+        <div className="flex flex-wrap gap-6 text-xs text-blue-100 border-t border-white/10 pt-4 mt-2">
+          <div className="flex items-center gap-2"><Wallet size={14} /> Simpanan Anggota: {formatRupiah(total_simpanan_anggota)}</div>
+          <div className="flex items-center gap-2"><HandCoins size={14} /> Pinjaman Aktif: {formatRupiah(total_pinjaman_aktif)}</div>
+          <div className="flex items-center gap-2"><ShieldCheck size={14} /> Anggota Aktif: {jumlah_anggota_aktif}</div>
         </div>
-
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 relative overflow-hidden border-t-4 border-t-slate-800">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2.5 bg-slate-100 text-slate-700 rounded-xl">
-              <Wallet size={20} />
-            </div>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Simpanan Anggota</span>
-          </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">
-            {formatRupiah(total_simpanan_anggota)}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 relative overflow-hidden border-t-4 border-t-rose-500">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2.5 bg-rose-50 text-rose-600 rounded-xl">
-              <HandCoins size={20} />
-            </div>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Pinjaman Aktif</span>
-          </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">
-            {formatRupiah(total_pinjaman_aktif)}
-          </div>
-        </div>
-
       </div>
 
-      {/* 3 CARD BREAKDOWN SIMPANAN (MIDDLE ROW) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Simpanan Pokok</span>
-              <Building2 size={18} className="text-blue-500" />
-            </div>
-            <div className="text-xl font-bold text-slate-800 mb-1">
-              {formatRupiah(sub_saldo?.pokok || 0)}
-            </div>
-          </div>
-          <p className="text-[11px] text-slate-400 mt-2">Dibayarkan saat awal keanggotaan</p>
+      {/* SUB SALDO */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+          <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl w-fit"><Building2 size={20} /></div>
+          <p className="text-xs text-slate-400 mt-4">Simpanan Pokok</p>
+          <h4 className="text-lg font-bold text-slate-800 mt-1">{formatRupiah(sub_saldo.pokok)}</h4>
         </div>
-
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Simpanan Wajib</span>
-              <PiggyBank size={18} className="text-amber-600" />
-            </div>
-            <div className="text-xl font-bold text-slate-800 mb-1">
-              {formatRupiah(sub_saldo?.wajib || 0)}
-            </div>
-          </div>
-          <p className="text-[11px] text-slate-400 mt-2">Total iuran bulanan rutin</p>
+        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+          <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl w-fit"><Wallet size={20} /></div>
+          <p className="text-xs text-slate-400 mt-4">Simpanan Wajib</p>
+          <h4 className="text-lg font-bold text-slate-800 mt-1">{formatRupiah(sub_saldo.wajib)}</h4>
         </div>
-
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Simpanan Sukarela</span>
-              <Coins size={18} className="text-emerald-500" />
-            </div>
-            <div className="text-xl font-bold text-slate-800 mb-1">
-              {formatRupiah(sub_saldo?.sukarela || 0)}
-            </div>
-          </div>
-          <p className="text-[11px] text-slate-400 mt-2">Saldo tersedia untuk ditarik</p>
+        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+          <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl w-fit"><HandCoins size={20} /></div>
+          <p className="text-xs text-slate-400 mt-4">Simpanan Sukarela</p>
+          <h4 className="text-lg font-bold text-slate-800 mt-1">{formatRupiah(sub_saldo.sukarela)}</h4>
         </div>
-
       </div>
 
-      {/* TABEL AKTIVITAS TERBARU */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-
-        <div className="p-5 bg-slate-50/70 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-base font-bold text-slate-800">Aktivitas Terbaru</h3>
-        </div>
+      {/* AKTIVITAS TERBARU */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+        <h3 className="text-base font-bold text-slate-800 mb-1">Aktivitas Terbaru</h3>
+        <p className="text-xs text-slate-400 mb-6">Transaksi lintas-anggota terkini</p>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                <th className="py-4 px-6">Transaksi</th>
-                <th className="py-4 px-6">Anggota</th>
-                <th className="py-4 px-6">Kategori</th>
-                <th className="py-4 px-6">Waktu</th>
-                <th className="py-4 px-6">Jumlah</th>
-                <th className="py-4 px-6 text-center">Status</th>
+              <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-400 tracking-wider">
+                <th className="pb-3 font-semibold">ANGGOTA</th>
+                <th className="pb-3 font-semibold">TRANSAKSI</th>
+                <th className="pb-3 font-semibold">WAKTU</th>
+                <th className="pb-3 font-semibold">JUMLAH</th>
+                <th className="pb-3 font-semibold">STATUS</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
-              {(!aktivitas_terbaru || aktivitas_terbaru.length === 0) && (
-                <tr><td colSpan={6} className="py-6 text-center text-slate-400">Belum ada aktivitas.</td></tr>
+            <tbody className="divide-y divide-slate-50 text-sm text-slate-700">
+              {aktivitas_terbaru.length === 0 && (
+                <tr><td colSpan={5} className="py-6 text-center text-slate-400 text-xs">Belum ada aktivitas.</td></tr>
               )}
-              {aktivitas_terbaru?.map((item, idx) => (
+              {aktivitas_terbaru.map((item, idx) => (
                 <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="py-4 px-6">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${
-                        item.tipe === 'in'
-                          ? 'bg-emerald-50 text-emerald-600'
-                          : item.tipe === 'out'
-                          ? 'bg-rose-50 text-rose-600'
-                          : 'bg-amber-50 text-amber-600'
-                      }`}>
-                        {item.tipe === 'in' && <ArrowDownLeft size={16} />}
-                        {item.tipe === 'out' && <ArrowUpRight size={16} />}
-                        {item.tipe === 'pending' && <Clock size={16} />}
-                      </div>
-                      <span className="font-bold text-slate-800">{item.jenis}</span>
-                    </div>
+                  <td className="py-4">
+                    <div className="font-semibold text-slate-800">{item.anggota}</div>
+                    <div className="text-[11px] text-slate-400">{item.nip}</div>
                   </td>
-                  <td className="py-4 px-6">
-                    <div>
-                      <div className="font-bold text-slate-800">{item.anggota}</div>
-                      <div className="text-[10px] text-slate-400 font-normal">{item.nip}</div>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="px-2.5 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-md tracking-wider">
-                      {item.kategori}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6 text-slate-400 text-xs">{item.waktu}</td>
-                  <td className={`py-4 px-6 font-bold ${
-                    item.tipe === 'in' ? 'text-emerald-600' : item.tipe === 'out' ? 'text-rose-600' : 'text-slate-800'
+                  <td className="py-4 font-medium">{item.jenis}</td>
+                  <td className="py-4 text-xs text-slate-400 whitespace-nowrap">{formatWaktuAktivitas(item.waktu)}</td>
+                  <td className={`py-4 font-semibold whitespace-nowrap ${
+                    item.tipe === 'in' ? 'text-emerald-600' : item.tipe === 'out' ? 'text-rose-600' : 'text-slate-700'
                   }`}>
-                    {formatRupiah(item.jumlah)}
-                  </td>
-                  <td className="py-4 px-6 text-center">
-                    <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold ${
-                      item.status === 'Berhasil' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${
-                        item.status === 'Berhasil' ? 'bg-emerald-500' : 'bg-amber-500'
-                      }`}></span>
-                      {item.status}
+                    <span className="inline-flex items-center gap-1">
+                      {item.tipe === 'in' ? <ArrowDownLeft size={14} /> : item.tipe === 'out' ? <ArrowUpRight size={14} /> : null}
+                      {formatRupiah(item.jumlah)}
                     </span>
+                  </td>
+                  <td className="py-4 whitespace-nowrap">
+                    {item.status === 'Menunggu' ? (
+                      <span className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full w-fit">
+                        <Clock size={12} /> Menunggu
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full w-fit">
+                        <ShieldCheck size={12} /> {item.status}
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}

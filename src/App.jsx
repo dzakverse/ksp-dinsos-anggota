@@ -23,6 +23,7 @@ import ProfileAdmin from './pages/admin/ProfileAdmin';
 import UbahPassword from './pages/admin/UbahPassword';
 import DetailAnggota from './pages/admin/DetailAnggota';
 import VerifikasiDetail from './pages/admin/VerifikasiDetail';
+import KasKoperasi from './pages/admin/KasKoperasi';
 
 // IMPORT HALAMAN - KETUA
 import DashboardKetua from './pages/ketua/DashboardKetua';
@@ -106,6 +107,7 @@ export default function App() {
           <Route path="verifikasi/:id" element={<VerifikasiDetail />} />
           <Route path="anggota" element={<DataAnggota/>} />
           <Route path="anggota/:id" element={<DetailAnggota />} />
+          <Route path="kas" element={<KasKoperasi />} />
           <Route path="profile" element={<ProfileAdmin/>} />
           <Route path="profile/ubah-password" element={<UbahPassword />} />
         </Route>
@@ -129,6 +131,7 @@ export default function App() {
           <Route path="persetujuan" element={<PersetujuanPinjaman/>} />
           <Route path="persetujuan/bypass" element={<EmergencyBypass/>} />
           <Route path="pengurus" element={<PengurusAnggota/>} />
+          <Route path="kas" element={<KasKoperasi />} />
           <Route path="profile" element={<ProfileKetua />} />
           <Route path="profile/ubah-password" element={<UbahPasswordKetua />} />
         </Route>

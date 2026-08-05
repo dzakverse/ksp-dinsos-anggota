@@ -8,6 +8,8 @@ import {
   CheckCircle2,
   Clock,
   XCircle,
+  MinusCircle,
+  AlertCircle,
 } from 'lucide-react';
 import api from '../services/api';
 import { formatRupiah, formatTanggal } from '../utils/format';
@@ -29,7 +31,7 @@ const statusBadge = (status) => {
   if (status === 'PENDING') {
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-100">
-        <Clock size={13} /> Pending
+        <Clock size={13} /> Menunggu Konfirmasi
       </span>
     );
   }
@@ -45,12 +47,50 @@ export default function Simpananku() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
+  const [showTarikModal, setShowTarikModal] = useState(false);
+  const [nominalTarik, setNominalTarik] = useState('');
+  const [keteranganTarik, setKeteranganTarik] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [tarikError, setTarikError] = useState('');
+
+  const loadData = () => {
+    setLoading(true);
     api.get('/simpanan')
       .then((res) => setData(res.data))
       .catch(() => setError('Gagal memuat data simpanan. Coba muat ulang halaman.'))
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { loadData(); }, []);
+
+  const handleSubmitTarik = async (e) => {
+    e.preventDefault();
+    setTarikError('');
+
+    const jumlah = Number(nominalTarik);
+    if (!jumlah || jumlah <= 0) {
+      setTarikError('Masukkan nominal yang valid.');
+      return;
+    }
+    if (jumlah > data.total_sukarela) {
+      setTarikError(`Saldo Sukarela Anda tidak mencukupi (tersedia ${formatRupiah(data.total_sukarela)}).`);
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await api.post('/simpanan/tarik', { jumlah, keterangan: keteranganTarik || undefined });
+      setShowTarikModal(false);
+      setNominalTarik('');
+      setKeteranganTarik('');
+      alert('Request tarik Simpanan Sukarela berhasil dikirim. Menunggu konfirmasi Bendahara.');
+      loadData();
+    } catch (err) {
+      setTarikError(err.response?.data?.message || 'Gagal mengirim request. Coba lagi.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (loading) {
     return <div className="text-center py-20 text-slate-400 text-sm">Memuat data...</div>;
@@ -75,14 +115,26 @@ export default function Simpananku() {
           return (
             <div key={key} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow duration-200">
               <div>
-                <div className="flex items-center gap-4 mb-4">
-                  <div className={`p-3 rounded-xl ${meta.bg} ${meta.color}`}>
-                    <Icon size={22} />
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-4">
+                    <div className={`p-3 rounded-xl ${meta.bg} ${meta.color}`}>
+                      <Icon size={22} />
+                    </div>
+                    <span className="text-sm font-semibold text-slate-500 tracking-wide">{meta.label}</span>
                   </div>
-                  <span className="text-sm font-semibold text-slate-500 tracking-wide">{meta.label}</span>
                 </div>
                 <h3 className="text-2xl font-bold text-slate-800 tracking-tight">{formatRupiah(amount)}</h3>
               </div>
+
+              {key === 'SUKARELA' && (
+                <button
+                  onClick={() => setShowTarikModal(true)}
+                  className="mt-4 w-full py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  <MinusCircle size={15} />
+                  <span>Tarik Simpanan Sukarela</span>
+                </button>
+              )}
             </div>
           );
         })}
@@ -139,6 +191,76 @@ export default function Simpananku() {
           <span className="text-slate-400 font-medium">Menampilkan {data.riwayat.length} dari {data.riwayat.length} transaksi</span>
         </div>
       </div>
+
+      {/* MODAL TARIK SIMPANAN SUKARELA */}
+      {showTarikModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center">
+                <MinusCircle size={20} />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Tarik Simpanan Sukarela</h3>
+                <p className="text-[11px] text-slate-400">Saldo tersedia: {formatRupiah(data.total_sukarela)}</p>
+              </div>
+            </div>
+
+            {tarikError && (
+              <div className="mt-4 p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-rose-700 text-xs font-medium">
+                <AlertCircle size={16} className="shrink-0" />
+                <span>{tarikError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmitTarik} className="py-5 space-y-4 text-xs">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1.5">Nominal Penarikan (Rp)</label>
+                <input
+                  type="number"
+                  required
+                  min={1}
+                  value={nominalTarik}
+                  onChange={(e) => setNominalTarik(e.target.value)}
+                  placeholder="Contoh: 200000"
+                  className="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-rose-400"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-slate-700 block mb-1.5">Keterangan (Opsional)</label>
+                <textarea
+                  rows={2}
+                  value={keteranganTarik}
+                  onChange={(e) => setKeteranganTarik(e.target.value)}
+                  placeholder="Contoh: Untuk kebutuhan mendesak..."
+                  className="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-rose-400 resize-none"
+                />
+              </div>
+
+              <div className="p-3 bg-amber-50/70 border border-amber-100 rounded-xl text-[11px] text-amber-800 leading-relaxed">
+                Request ini akan menunggu konfirmasi dari Bendahara. Saldo baru akan berkurang setelah dikonfirmasi.
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => { setShowTarikModal(false); setTarikError(''); }}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs cursor-pointer disabled:opacity-60"
+                >
+                  {submitting ? 'Mengirim...' : 'Kirim Request'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

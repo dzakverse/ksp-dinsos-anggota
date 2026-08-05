@@ -1,19 +1,31 @@
-import React, { useState } from 'react';
-import { Star, Send, Info } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Star, Send, AlertCircle } from 'lucide-react';
+import api from '../services/api';
 
 export default function Ajukan() {
-  // State Form
+  const navigate = useNavigate();
+
+  const [kebijakan, setKebijakan] = useState(null);
+  const [loadingKebijakan, setLoadingKebijakan] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
   const [nominal, setNominal] = useState(5000000);
   const [tenor, setTenor] = useState(12);
   const [keperluan, setKeperluan] = useState('Biaya Pendidikan');
   const [keterangan, setKeterangan] = useState('');
 
-  // Konstanta Perhitungan
-  const limitMaksimal = 15000000;
-  const bungaRate = 0.01; // 1%
-  const biayaAdminRate = 0.01; // 1%
+  useEffect(() => {
+    api.get('/kebijakan')
+      .then((res) => setKebijakan(res.data))
+      .finally(() => setLoadingKebijakan(false));
+  }, []);
 
-  // Kalkulasi Otomatis
+  const limitMaksimal = kebijakan ? Number(kebijakan.plafon_maksimal) : 0;
+  const bungaRate = kebijakan ? Number(kebijakan.suku_bunga_persen) / 100 : 0.01;
+  const biayaAdminRate = 0.01;
+
   const nominalNum = Number(nominal) || 0;
   const biayaAdmin = nominalNum * biayaAdminRate;
   const uangDiterima = nominalNum - biayaAdmin;
@@ -21,31 +33,50 @@ export default function Ajukan() {
   const jasaKoperasi = nominalNum * bungaRate;
   const totalCicilanBulanan = angsuranPokok + jasaKoperasi;
 
-  // Format Rupiah
-  const formatRupiah = (num) => {
-    return 'Rp ' + Math.round(num).toLocaleString('id-ID');
-  };
+  const melebihiLimit = !loadingKebijakan && nominalNum > limitMaksimal;
+
+  const formatRupiah = (num) => 'Rp ' + Math.round(num).toLocaleString('id-ID');
 
   const handleNominalChange = (e) => {
-    const value = e.target.value.replace(/\D/g, ''); // Hanya angka
-    if (value === '') {
-      setNominal('');
-    } else {
-      setNominal(Number(value));
-    }
+    const value = e.target.value.replace(/\D/g, '');
+    setNominal(value === '' ? '' : Number(value));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert(`Pengajuan berhasil dikirim!\nNominal: ${formatRupiah(nominalNum)}\nTenor: ${tenor} Bulan\nKeperluan: ${keperluan}`);
+    setErrorMessage('');
+
+    if (melebihiLimit) {
+      setErrorMessage(`Nominal pengajuan melebihi limit maksimal (${formatRupiah(limitMaksimal)}).`);
+      return;
+    }
+    if (nominalNum < 100000) {
+      setErrorMessage('Nominal pengajuan minimal Rp 100.000.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await api.post('/pinjaman', {
+        jumlah: nominalNum,
+        tenor_bulan: tenor,
+        alasan: `${keperluan}${keterangan ? ' - ' + keterangan : ''}`,
+      });
+
+      alert('Pengajuan pinjaman berhasil dikirim! Silakan tunggu proses verifikasi.');
+      navigate('/pinjaman');
+    } catch (err) {
+      setErrorMessage(err.response?.data?.message || 'Gagal mengirim pengajuan. Coba lagi.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <div className="space-y-6 animate-fade-in max-w-7xl mx-auto">
-      
+
       {/* 1. BANNER LIMIT PINJAMAN */}
       <div className="bg-[#000D21] rounded-2xl p-6 sm:p-8 text-white shadow-md relative overflow-hidden flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        {/* Accent Blur */}
         <div className="absolute right-0 top-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-2xl pointer-events-none"></div>
 
         <div>
@@ -56,23 +87,19 @@ export default function Ajukan() {
             <span>Limit Pinjaman</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mt-2">
-            {formatRupiah(limitMaksimal)}
+            {loadingKebijakan ? '...' : formatRupiah(limitMaksimal)}
           </h2>
         </div>
 
-        {/* Badge Bunga */}
         <div className="bg-white/15 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 text-xs font-semibold text-white">
-          Bunga 1% / bulan
+          Bunga {loadingKebijakan ? '...' : kebijakan.suku_bunga_persen}% / bulan
         </div>
       </div>
 
-      {/* 2. GRID KONTEN FORM (KIRI) & RINGKASAN (KANAN) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* FORM DETAIL PENGAJUAN PINJAMAN (2 KOLOM) */}
+
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-6 sm:p-8">
-          
-          {/* Breadcrumb Mini */}
+
           <div className="text-xs font-semibold text-slate-400 mb-1">
             Pinjaman &rsaquo; <span className="text-slate-600">Pengajuan Pinjaman</span>
           </div>
@@ -81,9 +108,15 @@ export default function Ajukan() {
             Detail Pengajuan Pinjaman
           </h3>
 
+          {errorMessage && (
+            <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-rose-700 text-xs font-medium">
+              <AlertCircle size={16} className="shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
-            
-            {/* Input Nominal Pinjaman */}
+
             <div>
               <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
                 Nominal Pinjaman
@@ -93,20 +126,22 @@ export default function Ajukan() {
                 value={nominal}
                 onChange={handleNominalChange}
                 placeholder="Masukkan nominal pinjaman"
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
+                className={`w-full px-4 py-3 rounded-xl border text-slate-800 font-semibold focus:outline-none focus:ring-2 transition-all ${
+                  melebihiLimit ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-200 focus:ring-blue-600'
+                }`}
               />
-              <p className="text-[11px] text-slate-400 mt-1 font-medium">
-                Minimal: Rp 500.000 &bull; Maksimal: {formatRupiah(limitMaksimal)}
+              <p className={`text-[11px] mt-1 font-medium ${melebihiLimit ? 'text-rose-600' : 'text-slate-400'}`}>
+                Minimal: Rp 100.000 &bull; Maksimal: {loadingKebijakan ? '...' : formatRupiah(limitMaksimal)}
+                {melebihiLimit && ' — melebihi limit!'}
               </p>
             </div>
 
-            {/* Opsi Tenor / Jangka Waktu */}
             <div>
               <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
                 Tenor / Jangka Waktu
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {[3, 6, 12, 24, 36].slice(0, 4).map((t) => (
+                {[3, 6, 12, 24].map((t) => (
                   <button
                     key={t}
                     type="button"
@@ -123,7 +158,6 @@ export default function Ajukan() {
               </div>
             </div>
 
-            {/* Keperluan Pinjaman (REVISI: DROPDOWN PILIHAN UMUM) */}
             <div>
               <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
                 Keperluan Pinjaman
@@ -142,7 +176,6 @@ export default function Ajukan() {
               </select>
             </div>
 
-            {/* Input Alasan / Keterangan Tambahan */}
             <div>
               <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
                 Alasan / Keterangan Tambahan
@@ -156,22 +189,20 @@ export default function Ajukan() {
               ></textarea>
             </div>
 
-            {/* Tombol Kirim Pengajuan */}
             <button
               type="submit"
-              className="w-full py-3.5 bg-[#1e293b] hover:bg-slate-800 text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
+              disabled={submitting || melebihiLimit || loadingKebijakan}
+              className="w-full py-3.5 bg-[#1e293b] hover:bg-slate-800 text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Send size={16} />
-              <span>Kirim Pengajuan</span>
+              <span>{submitting ? 'Mengirim...' : 'Kirim Pengajuan'}</span>
             </button>
           </form>
 
         </div>
 
-        {/* KOLOM KANAN: RINGKASAN & DETAIL PINJAMAN */}
         <div className="space-y-6">
-          
-          {/* Card Ringkasan Pinjaman */}
+
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
             <h4 className="text-base font-bold text-slate-800">Ringkasan Pinjaman</h4>
             <p className="text-xs text-slate-400 mt-0.5">Simulasi angsuran bulanan</p>
@@ -179,29 +210,24 @@ export default function Ajukan() {
             <div className="mt-6 space-y-4">
               <div>
                 <p className="text-xs text-slate-400 font-medium">Uang yang Diterima</p>
-                <p className="text-sm font-bold text-slate-800 mt-0.5">
-                  {formatRupiah(uangDiterima)}
-                </p>
+                <p className="text-sm font-bold text-slate-800 mt-0.5">{formatRupiah(uangDiterima)}</p>
               </div>
 
               <div>
                 <p className="text-xs text-slate-400 font-medium">Angsuran Pokok / Bulan</p>
-                <p className="text-sm font-bold text-slate-800 mt-0.5">
-                  {formatRupiah(angsuranPokok)}
-                </p>
+                <p className="text-sm font-bold text-slate-800 mt-0.5">{formatRupiah(angsuranPokok)}</p>
               </div>
 
               <div>
-                <p className="text-xs text-slate-400 font-medium">Jasa Koperasi (1%)</p>
-                <p className="text-sm font-bold text-slate-800 mt-0.5">
-                  {formatRupiah(jasaKoperasi)}
+                <p className="text-xs text-slate-400 font-medium">
+                  Jasa Koperasi ({loadingKebijakan ? '...' : kebijakan.suku_bunga_persen}%)
                 </p>
+                <p className="text-sm font-bold text-slate-800 mt-0.5">{formatRupiah(jasaKoperasi)}</p>
               </div>
             </div>
 
-            {/* Card Highlight Total Cicilan Bulanan */}
             <div className="mt-6 bg-[#FABD00] text-white p-4 rounded-xl shadow-sm">
-              <p className="text-[10px] uppercase font-bold tracking-wider text-white-200">
+              <p className="text-[10px] uppercase font-bold tracking-wider text-white/80">
                 Total Cicilan Bulanan
               </p>
               <p className="text-2xl font-extrabold tracking-tight mt-1">
@@ -209,13 +235,11 @@ export default function Ajukan() {
               </p>
             </div>
 
-            {/* Catatan Biaya Administrasi */}
             <div className="mt-4 p-3 bg-amber-50/80 border border-amber-100 rounded-xl text-[11px] text-amber-800 font-medium leading-relaxed">
               Biaya administrasi 1% ({formatRupiah(biayaAdmin)}) akan dipotong langsung dari nominal pinjaman.
             </div>
           </div>
 
-          {/* Card Detail Pinjaman (Rangkuman Bawah) */}
           <div className="bg-slate-50/70 rounded-2xl border border-slate-200/80 p-6 space-y-3">
             <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
               Detail Pinjaman

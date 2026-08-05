@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Clock,
   XCircle,
+  Calendar,
 } from 'lucide-react';
 import api from '../services/api';
 import { formatRupiah, formatTanggal } from '../utils/format';
@@ -104,7 +105,59 @@ export default function Pinjaman() {
 
       </div>
 
-      {/* 2. SECTION TABEL RIWAYAT PINJAMAN */}
+      {/* 1.5 TRACKING CICILAN PINJAMAN AKTIF */}
+      {pinjaman_aktif && pinjaman_aktif.cicilan && pinjaman_aktif.cicilan.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-lg font-bold text-slate-800">Progress Cicilan</h3>
+            <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+              {pinjaman_aktif.cicilan_lunas} / {pinjaman_aktif.cicilan.length} bulan lunas
+            </span>
+          </div>
+          <p className="text-xs text-slate-400 mb-6">Kode Pinjaman: #{pinjaman_aktif.kode}</p>
+
+          {/* Progress bar */}
+          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mb-6">
+            <div
+              className="h-full bg-emerald-500 rounded-full transition-all"
+              style={{ width: `${(pinjaman_aktif.cicilan_lunas / pinjaman_aktif.cicilan.length) * 100}%` }}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {pinjaman_aktif.cicilan.map((c) => {
+              const lunas = c.status === 'LUNAS';
+              return (
+                <div
+                  key={c.id}
+                  className={`rounded-xl border p-3.5 ${
+                    lunas ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase">Bulan {c.cicilan_ke}</span>
+                    {lunas ? (
+                      <CheckCircle2 size={16} className="text-emerald-600" />
+                    ) : (
+                      <Clock size={16} className="text-slate-400" />
+                    )}
+                  </div>
+                  <p className="text-sm font-bold text-slate-800">{formatRupiah(c.jumlah)}</p>
+                  {lunas ? (
+                    <p className="text-[10px] text-emerald-700 font-medium mt-1 flex items-center gap-1">
+                      <Calendar size={10} /> Dibayar {formatTanggal(c.tanggal_bayar)}
+                    </p>
+                  ) : (
+                    <p className="text-[10px] text-slate-400 font-medium mt-1 flex items-center gap-1">
+                      <Calendar size={10} /> Jatuh tempo {formatTanggal(c.jatuh_tempo)}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-slate-100">
           <h3 className="text-lg font-bold text-slate-800">Riwayat Pinjaman</h3>
