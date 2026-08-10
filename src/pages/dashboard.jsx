@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Calendar, User, Clock, CheckCircle } from 'lucide-react';
+import { Calendar, User, Clock, CheckCircle, XCircle } from 'lucide-react';
 import api from '../services/api';
 import { formatRupiah, formatTanggal } from '../utils/format';
+
+// Warna badge status ditentukan dari teks status itu sendiri (bukan dari arah uang),
+// supaya konsisten untuk semua kategori transaksi (Simpanan maupun Pinjaman).
+const statusTone = (status) => {
+  const s = (status || '').toUpperCase();
+  if (s.includes('MENUNGGU') || s === 'PENDING') return 'pending';
+  if (s.includes('TOLAK') || s === 'GAGAL') return 'gagal';
+  return 'sukses';
+};
 
 export default function Dashboard() {
   const [data, setData] = useState(null);
@@ -112,9 +121,13 @@ export default function Dashboard() {
                     {item.arah === 'in' ? '+' : item.arah === 'out' ? '-' : ''}{formatRupiah(item.jumlah)}
                   </td>
                   <td className="py-4 whitespace-nowrap">
-                    {item.arah === 'pending' ? (
+                    {statusTone(item.status) === 'pending' ? (
                       <span className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full w-fit">
                         <Clock size={12} /> {item.status}
+                      </span>
+                    ) : statusTone(item.status) === 'gagal' ? (
+                      <span className="flex items-center gap-1.5 text-xs text-rose-600 bg-rose-50 px-2 py-1 rounded-full w-fit">
+                        <XCircle size={12} /> {item.status}
                       </span>
                     ) : (
                       <span className="flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full w-fit">
