@@ -153,7 +153,7 @@ export default function Profil() {
 
           <div className="mt-8 pt-6 border-t border-white/15">
             <p className="text-xs text-blue-200 font-medium">ID Keanggotaan</p>
-            <p className="text-base font-bold tracking-wider mt-0.5">{data.id_keanggotaan || '-'}</p>
+            <p className="text-base font-bold tracking-wider mt-0.5">{data.id_anggota || '-'}</p>
           </div>
         </div>
 
