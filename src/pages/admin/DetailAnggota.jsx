@@ -25,6 +25,7 @@ const STATUS_PINJAMAN = {
   MENUNGGU: { label: 'Menunggu Verifikasi', cls: 'bg-amber-50 text-amber-600 border-amber-200' },
   DISETUJUI_BENDAHARA: { label: 'Menunggu Persetujuan Ketua', cls: 'bg-blue-50 text-blue-600 border-blue-200' },
   DISETUJUI: { label: 'Aktif / Berjalan', cls: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
+  LUNAS: { label: 'Lunas', cls: 'bg-indigo-50 text-indigo-600 border-indigo-200' },
   DITOLAK: { label: 'Ditolak', cls: 'bg-rose-50 text-rose-600 border-rose-200' },
 };
 
@@ -63,7 +64,7 @@ export default function DetailAnggota() {
 
   useEffect(() => { fetchAnggota(); }, [id]);
 
-  const saldoJenisSaatIni = anggota ? (anggota.saldo[jenisSimpanan.toLowerCase()] ?? 0) : 0;
+  const saldoJenisSaatIni = anggota ? (anggota.saldo?.[jenisSimpanan.toLowerCase()] ?? 0) : 0;
 
   const handleOpenModal = (e) => {
     e.preventDefault();
@@ -128,16 +129,15 @@ export default function DetailAnggota() {
         catatan: catatanBayar,
       });
 
-      // Update state lokal biar UI langsung refresh tanpa perlu reload manual
       setSelectedPinjaman((prev) => ({
         ...prev,
-        cicilan: prev.cicilan.map((c) => (c.id === updatedCicilan.id ? updatedCicilan : c)),
+        cicilan: (prev.cicilan || []).map((c) => (c.id === updatedCicilan.id ? updatedCicilan : c)),
       }));
       setAnggota((prev) => ({
         ...prev,
-        daftar_pinjaman: prev.daftar_pinjaman.map((p) =>
+        daftar_pinjaman: (prev.daftar_pinjaman || []).map((p) =>
           p.id === selectedPinjaman.id
-            ? { ...p, cicilan: p.cicilan.map((c) => (c.id === updatedCicilan.id ? updatedCicilan : c)) }
+            ? { ...p, cicilan: (p.cicilan || []).map((c) => (c.id === updatedCicilan.id ? updatedCicilan : c)) }
             : p
         ),
       }));
@@ -194,7 +194,7 @@ export default function DetailAnggota() {
           </div>
           <div>
             <div className="text-xs text-slate-400 font-medium mb-0.5">Saldo Saat Ini</div>
-            <div className="text-2xl font-black text-slate-900 tracking-tight">{formatRupiah(anggota.saldo.pokok)}</div>
+            <div className="text-2xl font-black text-slate-900 tracking-tight">{formatRupiah(anggota.saldo?.pokok ?? 0)}</div>
           </div>
         </div>
 
@@ -207,7 +207,7 @@ export default function DetailAnggota() {
           </div>
           <div>
             <div className="text-xs text-slate-400 font-medium mb-0.5">Saldo Saat Ini</div>
-            <div className="text-2xl font-black text-slate-900 tracking-tight">{formatRupiah(anggota.saldo.wajib)}</div>
+            <div className="text-2xl font-black text-slate-900 tracking-tight">{formatRupiah(anggota.saldo?.wajib ?? 0)}</div>
           </div>
         </div>
 
@@ -220,7 +220,7 @@ export default function DetailAnggota() {
           </div>
           <div>
             <div className="text-xs text-slate-400 font-medium mb-0.5">Saldo Saat Ini</div>
-            <div className="text-2xl font-black text-slate-900 tracking-tight">{formatRupiah(anggota.saldo.sukarela)}</div>
+            <div className="text-2xl font-black text-slate-900 tracking-tight">{formatRupiah(anggota.saldo?.sukarela ?? 0)}</div>
           </div>
         </div>
       </div>
@@ -234,7 +234,6 @@ export default function DetailAnggota() {
               <h2 className="text-sm font-bold text-slate-800">Kelola Simpanan Manual</h2>
             </div>
 
-            {/* TOGGLE SETOR / TARIK */}
             <div className="flex bg-white rounded-xl border border-slate-200 p-1">
               <button
                 type="button"
@@ -362,7 +361,7 @@ export default function DetailAnggota() {
 
       </div>
 
-      {/* SECTION: PENCATATAN PINJAMAN */}
+      {/* SECTION: PENCATATAN PINJAMAN (DENGAN PENGAMAN CRASH) */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="p-4 sm:p-5 bg-blue-50/40 border-b border-slate-100 flex items-center gap-2">
           <FileText size={16} className="text-slate-800" />
@@ -375,14 +374,22 @@ export default function DetailAnggota() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {anggota.daftar_pinjaman.map((p) => {
-                const badge = STATUS_PINJAMAN[p.status];
-                const lunasCount = p.cicilan.filter((c) => c.status === 'LUNAS').length;
+                // Pengaman 1: Fallback jika status pinjaman dari backend tidak terdaftar
+                const badge = STATUS_PINJAMAN[p.status] || {
+                  label: p.status || 'Diproses',
+                  cls: 'bg-slate-50 text-slate-600 border-slate-200',
+                };
+
+                // Pengaman 2: Optional chaining agar p.cicilan null/undefined tidak melempar TypeError
+                const cicilanList = p.cicilan || [];
+                const lunasCount = cicilanList.filter((c) => c.status === 'LUNAS').length;
+
                 return (
                   <div key={p.id} className="border border-slate-200 rounded-2xl p-4 space-y-3">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="text-[10px] font-mono text-slate-400">#{p.kode}</p>
-                        <p className="text-lg font-black text-slate-900">{formatRupiah(p.jumlah)}</p>
+                        <p className="text-[10px] font-mono text-slate-400">#{p.kode || p.kode_pinjaman || 'LN-000'}</p>
+                        <p className="text-lg font-black text-slate-900">{formatRupiah(p.jumlah || p.jumlah_pinjaman || 0)}</p>
                       </div>
                       <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${badge.cls}`}>
                         {badge.label}
@@ -392,11 +399,11 @@ export default function DetailAnggota() {
                     <div className="flex items-center justify-between text-xs text-slate-500">
                       <span>Tenor {p.tenor_bulan} bulan</span>
                       {p.status === 'DISETUJUI' && (
-                        <span className="font-bold text-slate-700">{lunasCount}/{p.cicilan.length} lunas</span>
+                        <span className="font-bold text-slate-700">{lunasCount}/{cicilanList.length} lunas</span>
                       )}
                     </div>
 
-                    {p.status === 'DISETUJUI' && p.cicilan.length > 0 && (
+                    {p.status === 'DISETUJUI' && cicilanList.length > 0 && (
                       <button
                         onClick={() => setSelectedPinjaman(p)}
                         className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors cursor-pointer"
@@ -495,9 +502,9 @@ export default function DetailAnggota() {
 
             <div className="p-6 border-b border-slate-100 flex items-start justify-between shrink-0">
               <div>
-                <h3 className="text-lg font-extrabold text-slate-900">Detail Angsuran #{selectedPinjaman.kode}</h3>
+                <h3 className="text-lg font-extrabold text-slate-900">Detail Angsuran #{selectedPinjaman.kode || selectedPinjaman.kode_pinjaman}</h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  {formatRupiah(selectedPinjaman.jumlah)} &bull; Tenor {selectedPinjaman.tenor_bulan} bulan
+                  {formatRupiah(selectedPinjaman.jumlah || selectedPinjaman.jumlah_pinjaman || 0)} &bull; Tenor {selectedPinjaman.tenor_bulan} bulan
                 </p>
               </div>
               <button onClick={() => setSelectedPinjaman(null)} className="text-slate-400 hover:text-slate-700 p-1 rounded-lg cursor-pointer">
@@ -506,7 +513,7 @@ export default function DetailAnggota() {
             </div>
 
             <div className="p-6 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {selectedPinjaman.cicilan.map((c) => {
+              {(selectedPinjaman.cicilan || []).map((c) => {
                 const lunas = c.status === 'LUNAS';
                 return (
                   <div
@@ -517,7 +524,7 @@ export default function DetailAnggota() {
                       <span className="text-[11px] font-bold text-slate-500 uppercase">Bulan ke-{c.cicilan_ke}</span>
                       {lunas ? <CheckCircle2 size={16} className="text-emerald-600" /> : <Clock size={16} className="text-slate-400" />}
                     </div>
-                    <p className="text-base font-black text-slate-900">{formatRupiah(c.jumlah)}</p>
+                    <p className="text-base font-black text-slate-900">{formatRupiah(c.jumlah || c.jumlah_bayar || 0)}</p>
 
                     {lunas ? (
                       <div className="text-[10px] text-emerald-700 space-y-0.5">
@@ -551,7 +558,7 @@ export default function DetailAnggota() {
           <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6">
             <h3 className="text-base font-bold text-slate-900">Konfirmasi Pembayaran Angsuran</h3>
             <p className="text-xs text-slate-500 mt-1">
-              Bulan ke-{payingCicilan.cicilan_ke} sebesar <strong>{formatRupiah(payingCicilan.jumlah)}</strong>
+              Bulan ke-{payingCicilan.cicilan_ke} sebesar <strong>{formatRupiah(payingCicilan.jumlah || payingCicilan.jumlah_bayar || 0)}</strong>
             </p>
 
             <div className="mt-4">
