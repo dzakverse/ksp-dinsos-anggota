@@ -86,7 +86,11 @@ export default function Profil() {
                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Jenis Kelamin</p>
                 <p className="text-base font-bold text-slate-800 mt-1">{data.jenis_kelamin || '-'}</p>
               </div>
-              <div className="sm:col-span-2">
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Unit Kerja</p>
+                <p className="text-base font-bold text-slate-800 mt-1">{data.unit_kerja || '-'}</p>
+              </div>
+              <div>
                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Alamat Domisili</p>
                 <p className="text-base font-bold text-slate-800 mt-1 leading-relaxed">{data.alamat || '-'}</p>
               </div>
@@ -153,7 +157,7 @@ export default function Profil() {
 
           <div className="mt-8 pt-6 border-t border-white/15">
             <p className="text-xs text-blue-200 font-medium">ID Keanggotaan</p>
-            <p className="text-base font-bold tracking-wider mt-0.5">{data.id_keanggotaan || '-'}</p>
+            <p className="text-base font-bold tracking-wider mt-0.5">{data.id_anggota || '-'}</p>
           </div>
         </div>
 
