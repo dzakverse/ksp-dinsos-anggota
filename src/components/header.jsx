@@ -1,14 +1,37 @@
+import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Bell } from 'lucide-react';
+import api from '../services/api';
+
+const FOTO_DEFAULT = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60';
 
 export default function Header() {
   const location = useLocation();
+  const [profil, setProfil] = useState({
+    nama: localStorage.getItem('userName') || 'Anggota',
+    id_anggota: '',
+    foto_url: '',
+  });
+
+  useEffect(() => {
+    api.get('/profile')
+      .then((res) => {
+        setProfil({
+          nama: res.data.nama || localStorage.getItem('userName') || 'Anggota',
+          id_anggota: res.data.id_anggota || '',
+          foto_url: res.data.foto_url || '',
+        });
+      })
+      .catch(() => {
+        // Biarkan fallback dari localStorage jika request gagal
+      });
+  }, []);
 
   // Memetakan Judul & Subtitle berdasarkan path URL
   const getHeaderTitle = () => {
     switch (location.pathname) {
       case '/dashboard':
-        return { title: 'Beranda', subtitle: 'Selamat datang kembali, Budi Santoso!' };
+        return { title: 'Beranda', subtitle: `Selamat datang kembali, ${profil.nama}!` };
       case '/simpananku':
         return { title: 'Simpananku', subtitle: 'Kelola simpanan dan riwayat transaksi Anda' };
       case '/pinjaman':
@@ -37,13 +60,15 @@ export default function Header() {
 
         <div className="flex items-center gap-3">
           <img 
-            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60" 
+            src={profil.foto_url || FOTO_DEFAULT} 
             className="w-9 h-9 rounded-full object-cover border" 
             alt="Avatar"
           />
           <div className="text-right hidden sm:block">
-            <h4 className="text-sm font-semibold text-slate-800">Budi Santoso</h4>
-            <span className="text-[10px] text-slate-400 tracking-wider block">ID: ANG-2024-001</span>
+            <h4 className="text-sm font-semibold text-slate-800">{profil.nama}</h4>
+            <span className="text-[10px] text-slate-400 tracking-wider block">
+              {profil.id_anggota ? `ID: ${profil.id_anggota}` : ''}
+            </span>
           </div>
         </div>
       </div>

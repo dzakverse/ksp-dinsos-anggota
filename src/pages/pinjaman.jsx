@@ -17,6 +17,7 @@ const STATUS_BADGE = {
   DISETUJUI_BENDAHARA: { label: 'Menunggu Persetujuan', cls: 'bg-blue-50 text-blue-600 border-blue-100', icon: Clock },
   DISETUJUI: { label: 'Disetujui / Aktif', cls: 'bg-emerald-50 text-emerald-600 border-emerald-100', icon: CheckCircle2 },
   DITOLAK: { label: 'Ditolak', cls: 'bg-rose-50 text-rose-600 border-rose-100', icon: XCircle },
+  LUNAS: { label: 'Lunas', cls: 'bg-slate-100 text-slate-500 border-slate-200', icon: CheckCircle2 },
 };
 
 export default function Pinjaman() {
