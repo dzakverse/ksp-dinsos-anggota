@@ -8,6 +8,7 @@ export default function Ajukan() {
 
   const [kebijakan, setKebijakan] = useState(null);
   const [pinjamanAktif, setPinjamanAktif] = useState(null);
+  const [pengajuanPending, setPengajuanPending] = useState(null);
   const [loadingAwal, setLoadingAwal] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -25,6 +26,7 @@ export default function Ajukan() {
       .then(([kebijakanRes, pinjamanRes]) => {
         setKebijakan(kebijakanRes.data);
         setPinjamanAktif(pinjamanRes.data?.pinjaman_aktif || null);
+        setPengajuanPending(pinjamanRes.data?.pengajuan_pending || null);
       })
       .catch((err) => {
         console.error("Gagal memuat data awal:", err);
@@ -55,8 +57,8 @@ export default function Ajukan() {
   const biayaAdmin = nominalNum * biayaAdminRate;
   const uangDiterima = isTopupMode ? pencairanBersihTopup - biayaAdmin : nominalNum - biayaAdmin;
   const angsuranPokok = tenor > 0 ? nominalNum / tenor : 0;
-  const jasaKoperasi = nominalNum * bungaRate;
-  const totalCicilanBulanan = angsuranPokok + jasaKoperasi;
+  const bungaPinjaman = nominalNum * bungaRate;
+  const totalCicilanBulanan = angsuranPokok + bungaPinjaman;
 
   const melebihiLimit = !loadingAwal && limitMaksimal > 0 && nominalNum > limitMaksimal;
   const tidakBisaAjukan = isTopupMode && (progressBelumCukup || nominalKurangDariSisa);
@@ -72,6 +74,10 @@ export default function Ajukan() {
     e.preventDefault();
     setErrorMessage('');
 
+    if (pengajuanPending) {
+      setErrorMessage(`Anda masih punya pengajuan #${pengajuanPending.kode} yang sedang diproses. Tunggu sampai selesai diverifikasi sebelum mengajukan lagi.`);
+      return;
+    }
     if (melebihiLimit) {
       setErrorMessage(`Nominal pengajuan melebihi limit maksimal (${formatRupiah(limitMaksimal)}).`);
       return;
@@ -111,6 +117,36 @@ export default function Ajukan() {
 
   if (loadingAwal) {
     return <div className="text-center py-20 text-slate-400 text-sm">Memuat data...</div>;
+  }
+
+  // Kalau masih ada pengajuan yang belum final (MENUNGGU / sudah diverifikasi
+  // Bendahara tapi belum di-ACC Ketua), jangan tampilkan form pengajuan baru
+  // sama sekali -> mencegah anggota spam pengajuan sebelum yang lama selesai
+  // diproses (lihat guard yang sama di backend store()).
+  if (pengajuanPending) {
+    return (
+      <div className="max-w-2xl mx-auto animate-fade-in">
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-6 flex items-start gap-4">
+          <div className="w-10 h-10 rounded-xl bg-amber-400 text-slate-900 flex items-center justify-center shrink-0">
+            <Lock size={20} />
+          </div>
+          <div className="text-sm">
+            <h3 className="font-bold text-amber-900">Masih Ada Pengajuan Yang Diproses</h3>
+            <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+              Pengajuan pinjaman Anda <strong>#{pengajuanPending.kode}</strong> saat ini berstatus{' '}
+              <strong>{pengajuanPending.status === 'MENUNGGU' ? 'Menunggu Verifikasi Bendahara' : 'Menunggu Persetujuan Ketua'}</strong>.
+              Anda hanya bisa punya satu pengajuan berjalan dalam satu waktu — tunggu sampai pengajuan ini disetujui atau ditolak sebelum mengajukan pinjaman baru.
+            </p>
+            <button
+              onClick={() => navigate('/pinjaman')}
+              className="mt-4 text-xs font-bold text-amber-900 bg-amber-200 hover:bg-amber-300 px-4 py-2 rounded-xl transition-colors cursor-pointer"
+            >
+              Lihat Status Pengajuan
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -298,9 +334,9 @@ export default function Ajukan() {
 
               <div>
                 <p className="text-xs text-slate-400 font-medium">
-                  Jasa Koperasi ({sukuBungaPersen}%)
+                  Bunga Pinjaman ({sukuBungaPersen}%)
                 </p>
-                <p className="text-sm font-bold text-slate-800 mt-0.5">{formatRupiah(jasaKoperasi)}</p>
+                <p className="text-sm font-bold text-slate-800 mt-0.5">{formatRupiah(bungaPinjaman)}</p>
               </div>
             </div>
 

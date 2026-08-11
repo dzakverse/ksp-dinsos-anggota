@@ -410,6 +410,13 @@ export default function DetailAnggota() {
                       )}
                     </div>
 
+                    {(p.is_topup || p.is_restrukturisasi) && (
+                      <div className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-lg px-2.5 py-1.5">
+                        {p.is_topup && `Top-Up dari #${p.topup_dari_pinjaman_kode || '-'}`}
+                        {p.is_restrukturisasi && `Hasil Restrukturisasi dari #${p.pinjaman_lama_kode || '-'}`}
+                      </div>
+                    )}
+
                     {p.status === 'DISETUJUI' && cicilanList.length > 0 && (
                       <button
                         onClick={() => setSelectedPinjaman(p)}
