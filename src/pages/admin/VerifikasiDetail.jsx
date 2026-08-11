@@ -160,12 +160,8 @@ export default function VerifikasiDetail() {
                     <td className="py-3 text-right font-bold">{simulasi.pokok_bulanan.toLocaleString('id-ID')}</td>
                   </tr>
                   <tr className="bg-slate-50/50">
-                    <td className="py-3 px-2 font-medium">Bunga (1%)</td>
+                    <td className="py-3 px-2 font-medium">Bunga Pinjaman ({simulasi.bunga_persen}%)</td>
                     <td className="py-3 px-2 text-right font-bold">{simulasi.bunga.toLocaleString('id-ID')}</td>
-                  </tr>
-                  <tr>
-                    <td className="py-3 font-medium">Biaya Administrasi</td>
-                    <td className="py-3 text-right font-bold">{simulasi.biaya_admin.toLocaleString('id-ID')}</td>
                   </tr>
                   <tr className="bg-slate-50/80 text-sm">
                     <td className="py-3.5 px-2 font-extrabold text-slate-900">Total Cicilan per Bulan</td>
@@ -175,6 +171,16 @@ export default function VerifikasiDetail() {
                   </tr>
                 </tbody>
               </table>
+
+              <div className="mt-4 p-3 bg-amber-50/80 border border-amber-100 rounded-xl text-[11px] text-amber-800 font-medium leading-relaxed flex justify-between items-center gap-2">
+                <span>
+                  Biaya Administrasi ({simulasi.biaya_admin_persen}%) — dipotong sekali dari saldo cair, bukan bagian dari cicilan bulanan.
+                </span>
+                <span className="font-bold whitespace-nowrap">{simulasi.biaya_admin.toLocaleString('id-ID')}</span>
+              </div>
+              <p className="mt-2 text-[11px] text-slate-400 font-medium">
+                Uang yang akan diterima anggota: <span className="font-bold text-slate-600">Rp {simulasi.uang_diterima.toLocaleString('id-ID')}</span>
+              </p>
             </div>
           </div>
 
