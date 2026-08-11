@@ -9,6 +9,7 @@ import {
   HelpCircle, 
   LogOut,
   Building2,
+  AlertTriangle,
 } from 'lucide-react';
 
 export default function KetuaLayout() {
@@ -16,13 +17,15 @@ export default function KetuaLayout() {
   
   // State Hover untuk Sidebar
   const [isHovered, setIsHovered] = useState(false);
+  // State untuk Modal Konfirmasi Logout
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const currentUser = {
     name: localStorage.getItem('userName') || 'Ketua',
     role: 'KETUA',
   };
 
-  const handleLogout = () => {
+  const processLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('userRole');
     localStorage.removeItem('userName');
@@ -39,7 +42,7 @@ export default function KetuaLayout() {
   ];
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans overflow-hidden">
+    <div className="flex h-screen bg-slate-50 font-sans overflow-hidden relative">
       
       {/* ================= SIDEBAR HOVER MODE ================= */}
       <aside 
@@ -111,7 +114,7 @@ export default function KetuaLayout() {
 
               <button 
                 type="button"
-                onClick={handleLogout}
+                onClick={() => setShowConfirm(true)}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-slate-400 hover:text-rose-400 hover:bg-[#0F1935] rounded-xl transition-colors cursor-pointer"
               >
                 <LogOut size={18} />
@@ -128,7 +131,7 @@ export default function KetuaLayout() {
               </button>
               <button 
                 title="Keluar"
-                onClick={handleLogout}
+                onClick={() => setShowConfirm(true)}
                 className="p-2.5 text-slate-400 hover:text-rose-400 hover:bg-[#0F1935] rounded-xl cursor-pointer"
               >
                 <LogOut size={18} />
@@ -162,6 +165,37 @@ export default function KetuaLayout() {
         </main>
 
       </div>
+
+      {/* ================= MODAL KONFIRMASI KELUAR ================= */}
+      {showConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden p-6 border border-slate-100 text-center">
+            <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle size={24} />
+            </div>
+
+            <h3 className="text-base font-bold text-slate-800">Konfirmasi Keluar</h3>
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              Apakah Anda yakin ingin keluar dari portal KSP Sejahtera?
+            </p>
+
+            <div className="mt-6 flex items-center gap-3">
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                onClick={processLogout}
+                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md shadow-rose-500/20 transition-all cursor-pointer"
+              >
+                Ya, Keluar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
