@@ -24,24 +24,30 @@ export default function Ajukan() {
     ])
       .then(([kebijakanRes, pinjamanRes]) => {
         setKebijakan(kebijakanRes.data);
-        setPinjamanAktif(pinjamanRes.data.pinjaman_aktif);
+        setPinjamanAktif(pinjamanRes.data?.pinjaman_aktif || null);
+      })
+      .catch((err) => {
+        console.error("Gagal memuat data awal:", err);
+        setErrorMessage("Gagal memuat kebijakan atau data pinjaman.");
       })
       .finally(() => setLoadingAwal(false));
   }, []);
 
-  const limitMaksimal = kebijakan ? Number(kebijakan.plafon_maksimal) : 0;
-  const bungaRate = kebijakan ? Number(kebijakan.suku_bunga_persen) / 100 : 0.01;
+  // Perhitungan dinamis dengan fallback nilai aman
+  const limitMaksimal = kebijakan ? Number(kebijakan.plafon_maksimal || 0) : 0;
+  const sukuBungaPersen = kebijakan ? Number(kebijakan.suku_bunga_persen || 1) : 1;
+  const bungaRate = sukuBungaPersen / 100;
   const biayaAdminRate = 0.01;
 
   const nominalNum = Number(nominal) || 0;
 
-  // ==== MODE TOP-UP: anggota masih punya pinjaman aktif ====
+  // ==== MODE TOP-UP: jika anggota masih punya pinjaman aktif ====
   const isTopupMode = !!pinjamanAktif;
-  const sisaPinjamanLama = pinjamanAktif ? Number(pinjamanAktif.sisa_pinjaman) : 0;
+  const sisaPinjamanLama = pinjamanAktif ? Number(pinjamanAktif.sisa_pinjaman || 0) : 0;
   const progressPersen = pinjamanAktif && pinjamanAktif.tenor_bulan > 0
-    ? Math.round((pinjamanAktif.cicilan_lunas / pinjamanAktif.tenor_bulan) * 100)
+    ? Math.round(((pinjamanAktif.cicilan_lunas || 0) / pinjamanAktif.tenor_bulan) * 100)
     : 0;
-  const minimalProgress = kebijakan ? Number(kebijakan.minimal_progress_topup_persen) : 30;
+  const minimalProgress = kebijakan ? Number(kebijakan.minimal_progress_topup_persen || 30) : 30;
   const progressBelumCukup = isTopupMode && progressPersen < minimalProgress;
   const nominalKurangDariSisa = isTopupMode && nominalNum <= sisaPinjamanLama;
   const pencairanBersihTopup = nominalNum - sisaPinjamanLama;
@@ -52,10 +58,10 @@ export default function Ajukan() {
   const jasaKoperasi = nominalNum * bungaRate;
   const totalCicilanBulanan = angsuranPokok + jasaKoperasi;
 
-  const melebihiLimit = !loadingAwal && nominalNum > limitMaksimal;
+  const melebihiLimit = !loadingAwal && limitMaksimal > 0 && nominalNum > limitMaksimal;
   const tidakBisaAjukan = isTopupMode && (progressBelumCukup || nominalKurangDariSisa);
 
-  const formatRupiah = (num) => 'Rp ' + Math.round(num).toLocaleString('id-ID');
+  const formatRupiah = (num) => 'Rp ' + Math.round(num || 0).toLocaleString('id-ID');
 
   const handleNominalChange = (e) => {
     const value = e.target.value.replace(/\D/g, '');
@@ -92,7 +98,12 @@ export default function Ajukan() {
         : 'Pengajuan pinjaman berhasil dikirim! Silakan tunggu proses verifikasi.');
       navigate('/pinjaman');
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || 'Gagal mengirim pengajuan. Coba lagi.');
+      // Penanganan error yang lebih komprehensif dari respon server Laravel
+      const detailPesan = 
+        err.response?.data?.message || 
+        err.response?.data?.error || 
+        'Gagal mengirim pengajuan. Silakan periksa jaringan atau coba beberapa saat lagi.';
+      setErrorMessage(detailPesan);
     } finally {
       setSubmitting(false);
     }
@@ -114,7 +125,7 @@ export default function Ajukan() {
           <div className="text-sm">
             <h3 className="font-bold text-amber-900">Anda Masih Memiliki Pinjaman Aktif</h3>
             <p className="text-xs text-amber-800 mt-1 leading-relaxed">
-              Kode <strong>#{pinjamanAktif.kode}</strong> dengan sisa <strong>{formatRupiah(sisaPinjamanLama)}</strong> ({progressPersen}% tenor sudah lunas).
+              Kode <strong>#{pinjamanAktif?.kode}</strong> dengan sisa <strong>{formatRupiah(sisaPinjamanLama)}</strong> ({progressPersen}% tenor sudah lunas).
               Pengajuan baru di bawah ini akan diproses sebagai <strong>Top-Up</strong>: sisa pinjaman lama otomatis dilunasi dari plafon baru, dan Anda hanya akan punya <strong>1 cicilan bulanan tunggal</strong> ke depannya.
             </p>
             {progressBelumCukup && (
@@ -146,7 +157,7 @@ export default function Ajukan() {
         </div>
 
         <div className="bg-white/15 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 text-xs font-semibold text-white">
-          Bunga {kebijakan.suku_bunga_persen}% / bulan
+          Bunga {sukuBungaPersen}% / bulan
         </div>
       </div>
 
@@ -287,7 +298,7 @@ export default function Ajukan() {
 
               <div>
                 <p className="text-xs text-slate-400 font-medium">
-                  Jasa Koperasi ({kebijakan.suku_bunga_persen}%)
+                  Jasa Koperasi ({sukuBungaPersen}%)
                 </p>
                 <p className="text-sm font-bold text-slate-800 mt-0.5">{formatRupiah(jasaKoperasi)}</p>
               </div>
