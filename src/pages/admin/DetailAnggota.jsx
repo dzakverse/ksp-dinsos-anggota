@@ -125,19 +125,26 @@ export default function DetailAnggota() {
     }
     setPayingSubmitting(true);
     try {
-      const { data: updatedCicilan } = await api.post(`/admin/cicilan/${payingCicilan.id}/bayar`, {
+      const { data } = await api.post(`/admin/cicilan/${payingCicilan.id}/bayar`, {
         catatan: catatanBayar,
       });
+      const updatedCicilan = data.cicilan;
+      const statusPinjamanBaru = data.pinjaman_status;
 
       setSelectedPinjaman((prev) => ({
         ...prev,
+        status: statusPinjamanBaru,
         cicilan: (prev.cicilan || []).map((c) => (c.id === updatedCicilan.id ? updatedCicilan : c)),
       }));
       setAnggota((prev) => ({
         ...prev,
         daftar_pinjaman: (prev.daftar_pinjaman || []).map((p) =>
           p.id === selectedPinjaman.id
-            ? { ...p, cicilan: (p.cicilan || []).map((c) => (c.id === updatedCicilan.id ? updatedCicilan : c)) }
+            ? {
+                ...p,
+                status: statusPinjamanBaru,
+                cicilan: (p.cicilan || []).map((c) => (c.id === updatedCicilan.id ? updatedCicilan : c)),
+              }
             : p
         ),
       }));

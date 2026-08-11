@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   ShieldCheck,
   CheckCircle2,
@@ -13,10 +12,9 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 import { formatRupiah, formatTanggal } from '../../utils/format';
+import EmergencyBypass from './EmergencyBypass';
 
 export default function PersetujuanPinjaman() {
-  const navigate = useNavigate();
-
   const [activeTab, setActiveTab] = useState('regular');
 
   const [selectedItem, setSelectedItem] = useState(null);
@@ -306,23 +304,7 @@ export default function PersetujuanPinjaman() {
 
         </div>
       ) : (
-        <div className="bg-amber-50/60 border border-amber-200 rounded-2xl p-8 text-center space-y-4">
-          <div className="w-12 h-12 bg-amber-400 text-slate-900 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
-            <Zap size={24} />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-slate-900">Modul Emergency Bypass</h3>
-            <p className="text-xs text-slate-600 max-w-md mx-auto mt-1">
-              Fasilitas percepatan pengajuan pinjaman darurat anggota tanpa melalui alur antrean verifikasi standar.
-            </p>
-          </div>
-          <button
-            onClick={() => navigate('/ketua/persetujuan/bypass')}
-            className="bg-slate-900 hover:bg-slate-800 text-amber-400 font-bold text-xs px-6 py-3 rounded-xl cursor-pointer shadow-xs"
-          >
-            Buka Form Emergency Bypass &#10148;
-          </button>
-        </div>
+        <EmergencyBypass />
       )}
 
       {modalType === 'acc' && selectedItem && (
