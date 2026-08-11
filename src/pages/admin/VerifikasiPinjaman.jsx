@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RotateCcw, FileText, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { RotateCcw, FileText, Clock, ChevronLeft, ChevronRight, ArrowRightLeft } from 'lucide-react';
 import api from '../../services/api';
 import { formatRupiah, formatTanggal } from '../../utils/format';
 
@@ -122,7 +122,16 @@ export default function VerifikasiPinjaman() {
               )}
               {!loading && !error && antrean?.data?.map((item) => (
                 <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
-                  <td className="py-4 px-6 font-bold text-slate-800">{item.user.nama}</td>
+                  <td className="py-4 px-6 font-bold text-slate-800">
+                    <div className="flex items-center gap-1.5">
+                      <span>{item.user.nama}</span>
+                      {item.is_topup && (
+                        <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 text-[9px] font-black px-1.5 py-0.5 rounded uppercase">
+                          <ArrowRightLeft size={9} /> Top-Up
+                        </span>
+                      )}
+                    </div>
+                  </td>
                   <td className="py-4 px-6 text-slate-500 font-mono text-[11px]">{item.user.nip}</td>
                   <td className="py-4 px-6 font-extrabold text-slate-900">{formatRupiah(item.jumlah)}</td>
                   <td className="py-4 px-6 text-slate-600 font-medium">{item.tenor_bulan} bln</td>

@@ -8,6 +8,7 @@ import {
   Clock,
   XCircle,
   Calendar,
+  ArrowRightLeft,
 } from 'lucide-react';
 import api from '../services/api';
 import { formatRupiah, formatTanggal } from '../utils/format';
@@ -17,7 +18,7 @@ const STATUS_BADGE = {
   DISETUJUI_BENDAHARA: { label: 'Menunggu Persetujuan', cls: 'bg-blue-50 text-blue-600 border-blue-100', icon: Clock },
   DISETUJUI: { label: 'Disetujui / Aktif', cls: 'bg-emerald-50 text-emerald-600 border-emerald-100', icon: CheckCircle2 },
   DITOLAK: { label: 'Ditolak', cls: 'bg-rose-50 text-rose-600 border-rose-100', icon: XCircle },
-  LUNAS: { label: 'Lunas', cls: 'bg-slate-100 text-slate-500 border-slate-200', icon: CheckCircle2 },
+  LUNAS: { label: 'Lunas', cls: 'bg-slate-100 text-slate-600 border-slate-200', icon: CheckCircle2 },
 };
 
 export default function Pinjaman() {
@@ -185,7 +186,16 @@ export default function Pinjaman() {
                 return (
                   <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="p-4 pl-6 text-sm text-slate-600 font-medium whitespace-nowrap">{formatTanggal(item.created_at)}</td>
-                    <td className="p-4 text-sm font-bold text-slate-800 whitespace-nowrap">{formatRupiah(item.jumlah)}</td>
+                    <td className="p-4 text-sm font-bold text-slate-800 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        <span>{formatRupiah(item.jumlah)}</span>
+                        {item.is_topup && (
+                          <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 text-[9px] font-black px-1.5 py-0.5 rounded uppercase">
+                            <ArrowRightLeft size={9} /> Top-Up
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="p-4 text-sm text-slate-600 font-medium whitespace-nowrap">{item.tenor_bulan} Bulan</td>
                     <td className="p-4 pr-6 whitespace-nowrap">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${badge.cls}`}>

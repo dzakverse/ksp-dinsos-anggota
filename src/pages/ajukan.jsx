@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Star, Send, AlertCircle } from 'lucide-react';
+import { Star, Send, AlertCircle, ArrowRightLeft, Lock } from 'lucide-react';
 import api from '../services/api';
 
 export default function Ajukan() {
   const navigate = useNavigate();
 
   const [kebijakan, setKebijakan] = useState(null);
-  const [loadingKebijakan, setLoadingKebijakan] = useState(true);
+  const [pinjamanAktif, setPinjamanAktif] = useState(null);
+  const [loadingAwal, setLoadingAwal] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -17,9 +18,15 @@ export default function Ajukan() {
   const [keterangan, setKeterangan] = useState('');
 
   useEffect(() => {
-    api.get('/kebijakan')
-      .then((res) => setKebijakan(res.data))
-      .finally(() => setLoadingKebijakan(false));
+    Promise.all([
+      api.get('/kebijakan'),
+      api.get('/pinjaman'),
+    ])
+      .then(([kebijakanRes, pinjamanRes]) => {
+        setKebijakan(kebijakanRes.data);
+        setPinjamanAktif(pinjamanRes.data.pinjaman_aktif);
+      })
+      .finally(() => setLoadingAwal(false));
   }, []);
 
   const limitMaksimal = kebijakan ? Number(kebijakan.plafon_maksimal) : 0;
@@ -27,13 +34,26 @@ export default function Ajukan() {
   const biayaAdminRate = 0.01;
 
   const nominalNum = Number(nominal) || 0;
+
+  // ==== MODE TOP-UP: anggota masih punya pinjaman aktif ====
+  const isTopupMode = !!pinjamanAktif;
+  const sisaPinjamanLama = pinjamanAktif ? Number(pinjamanAktif.sisa_pinjaman) : 0;
+  const progressPersen = pinjamanAktif && pinjamanAktif.tenor_bulan > 0
+    ? Math.round((pinjamanAktif.cicilan_lunas / pinjamanAktif.tenor_bulan) * 100)
+    : 0;
+  const minimalProgress = kebijakan ? Number(kebijakan.minimal_progress_topup_persen) : 30;
+  const progressBelumCukup = isTopupMode && progressPersen < minimalProgress;
+  const nominalKurangDariSisa = isTopupMode && nominalNum <= sisaPinjamanLama;
+  const pencairanBersihTopup = nominalNum - sisaPinjamanLama;
+
   const biayaAdmin = nominalNum * biayaAdminRate;
-  const uangDiterima = nominalNum - biayaAdmin;
+  const uangDiterima = isTopupMode ? pencairanBersihTopup - biayaAdmin : nominalNum - biayaAdmin;
   const angsuranPokok = tenor > 0 ? nominalNum / tenor : 0;
   const jasaKoperasi = nominalNum * bungaRate;
   const totalCicilanBulanan = angsuranPokok + jasaKoperasi;
 
-  const melebihiLimit = !loadingKebijakan && nominalNum > limitMaksimal;
+  const melebihiLimit = !loadingAwal && nominalNum > limitMaksimal;
+  const tidakBisaAjukan = isTopupMode && (progressBelumCukup || nominalKurangDariSisa);
 
   const formatRupiah = (num) => 'Rp ' + Math.round(num).toLocaleString('id-ID');
 
@@ -54,6 +74,10 @@ export default function Ajukan() {
       setErrorMessage('Nominal pengajuan minimal Rp 100.000.');
       return;
     }
+    if (tidakBisaAjukan) {
+      setErrorMessage('Pengajuan Top-Up belum memenuhi syarat. Lihat keterangan di atas.');
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -63,7 +87,9 @@ export default function Ajukan() {
         alasan: `${keperluan}${keterangan ? ' - ' + keterangan : ''}`,
       });
 
-      alert('Pengajuan pinjaman berhasil dikirim! Silakan tunggu proses verifikasi.');
+      alert(isTopupMode
+        ? 'Pengajuan Top-Up berhasil dikirim! Sisa pinjaman lama akan otomatis dilunasi setelah disetujui.'
+        : 'Pengajuan pinjaman berhasil dikirim! Silakan tunggu proses verifikasi.');
       navigate('/pinjaman');
     } catch (err) {
       setErrorMessage(err.response?.data?.message || 'Gagal mengirim pengajuan. Coba lagi.');
@@ -72,8 +98,36 @@ export default function Ajukan() {
     }
   };
 
+  if (loadingAwal) {
+    return <div className="text-center py-20 text-slate-400 text-sm">Memuat data...</div>;
+  }
+
   return (
     <div className="space-y-6 animate-fade-in max-w-7xl mx-auto">
+
+      {/* BANNER TOP-UP (kalau masih ada pinjaman aktif) */}
+      {isTopupMode && (
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-5 sm:p-6 flex items-start gap-4">
+          <div className="w-10 h-10 rounded-xl bg-amber-400 text-slate-900 flex items-center justify-center shrink-0">
+            <ArrowRightLeft size={20} />
+          </div>
+          <div className="text-sm">
+            <h3 className="font-bold text-amber-900">Anda Masih Memiliki Pinjaman Aktif</h3>
+            <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+              Kode <strong>#{pinjamanAktif.kode}</strong> dengan sisa <strong>{formatRupiah(sisaPinjamanLama)}</strong> ({progressPersen}% tenor sudah lunas).
+              Pengajuan baru di bawah ini akan diproses sebagai <strong>Top-Up</strong>: sisa pinjaman lama otomatis dilunasi dari plafon baru, dan Anda hanya akan punya <strong>1 cicilan bulanan tunggal</strong> ke depannya.
+            </p>
+            {progressBelumCukup && (
+              <div className="mt-3 bg-rose-100 border border-rose-300 rounded-xl p-3 flex items-start gap-2 text-rose-800">
+                <Lock size={15} className="shrink-0 mt-0.5" />
+                <p className="text-xs font-semibold">
+                  Belum bisa mengajukan Top-Up: minimal {minimalProgress}% tenor pinjaman lama harus lunas dulu (saat ini baru {progressPersen}%).
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 1. BANNER LIMIT PINJAMAN */}
       <div className="bg-[#000D21] rounded-2xl p-6 sm:p-8 text-white shadow-md relative overflow-hidden flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -87,12 +141,12 @@ export default function Ajukan() {
             <span>Limit Pinjaman</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mt-2">
-            {loadingKebijakan ? '...' : formatRupiah(limitMaksimal)}
+            {formatRupiah(limitMaksimal)}
           </h2>
         </div>
 
         <div className="bg-white/15 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 text-xs font-semibold text-white">
-          Bunga {loadingKebijakan ? '...' : kebijakan.suku_bunga_persen}% / bulan
+          Bunga {kebijakan.suku_bunga_persen}% / bulan
         </div>
       </div>
 
@@ -101,11 +155,11 @@ export default function Ajukan() {
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-6 sm:p-8">
 
           <div className="text-xs font-semibold text-slate-400 mb-1">
-            Pinjaman &rsaquo; <span className="text-slate-600">Pengajuan Pinjaman</span>
+            Pinjaman &rsaquo; <span className="text-slate-600">{isTopupMode ? 'Pengajuan Top-Up' : 'Pengajuan Pinjaman'}</span>
           </div>
 
           <h3 className="text-xl font-bold text-slate-800 mb-6">
-            Detail Pengajuan Pinjaman
+            {isTopupMode ? 'Detail Pengajuan Top-Up' : 'Detail Pengajuan Pinjaman'}
           </h3>
 
           {errorMessage && (
@@ -119,7 +173,7 @@ export default function Ajukan() {
 
             <div>
               <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
-                Nominal Pinjaman
+                Nominal Pinjaman {isTopupMode && '(Plafon Baru)'}
               </label>
               <input
                 type="text"
@@ -127,12 +181,13 @@ export default function Ajukan() {
                 onChange={handleNominalChange}
                 placeholder="Masukkan nominal pinjaman"
                 className={`w-full px-4 py-3 rounded-xl border text-slate-800 font-semibold focus:outline-none focus:ring-2 transition-all ${
-                  melebihiLimit ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-200 focus:ring-blue-600'
+                  melebihiLimit || nominalKurangDariSisa ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-200 focus:ring-blue-600'
                 }`}
               />
-              <p className={`text-[11px] mt-1 font-medium ${melebihiLimit ? 'text-rose-600' : 'text-slate-400'}`}>
-                Minimal: Rp 100.000 &bull; Maksimal: {loadingKebijakan ? '...' : formatRupiah(limitMaksimal)}
+              <p className={`text-[11px] mt-1 font-medium ${melebihiLimit || nominalKurangDariSisa ? 'text-rose-600' : 'text-slate-400'}`}>
+                Minimal: Rp 100.000 &bull; Maksimal: {formatRupiah(limitMaksimal)}
                 {melebihiLimit && ' — melebihi limit!'}
+                {nominalKurangDariSisa && ` — harus lebih besar dari sisa pinjaman lama (${formatRupiah(sisaPinjamanLama)})`}
               </p>
             </div>
 
@@ -191,11 +246,11 @@ export default function Ajukan() {
 
             <button
               type="submit"
-              disabled={submitting || melebihiLimit || loadingKebijakan}
+              disabled={submitting || melebihiLimit || tidakBisaAjukan}
               className="w-full py-3.5 bg-[#1e293b] hover:bg-slate-800 text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Send size={16} />
-              <span>{submitting ? 'Mengirim...' : 'Kirim Pengajuan'}</span>
+              <span>{submitting ? 'Mengirim...' : isTopupMode ? 'Kirim Pengajuan Top-Up' : 'Kirim Pengajuan'}</span>
             </button>
           </form>
 
@@ -208,8 +263,20 @@ export default function Ajukan() {
             <p className="text-xs text-slate-400 mt-0.5">Simulasi angsuran bulanan</p>
 
             <div className="mt-6 space-y-4">
+              {isTopupMode && (
+                <>
+                  <div>
+                    <p className="text-xs text-slate-400 font-medium">Potongan Pelunasan Pinjaman Lama</p>
+                    <p className="text-sm font-bold text-rose-600 mt-0.5">- {formatRupiah(sisaPinjamanLama)}</p>
+                  </div>
+                  <div className="border-t border-dashed border-slate-200"></div>
+                </>
+              )}
+
               <div>
-                <p className="text-xs text-slate-400 font-medium">Uang yang Diterima</p>
+                <p className="text-xs text-slate-400 font-medium">
+                  {isTopupMode ? 'Pencairan Bersih Diterima' : 'Uang yang Diterima'}
+                </p>
                 <p className="text-sm font-bold text-slate-800 mt-0.5">{formatRupiah(uangDiterima)}</p>
               </div>
 
@@ -220,7 +287,7 @@ export default function Ajukan() {
 
               <div>
                 <p className="text-xs text-slate-400 font-medium">
-                  Jasa Koperasi ({loadingKebijakan ? '...' : kebijakan.suku_bunga_persen}%)
+                  Jasa Koperasi ({kebijakan.suku_bunga_persen}%)
                 </p>
                 <p className="text-sm font-bold text-slate-800 mt-0.5">{formatRupiah(jasaKoperasi)}</p>
               </div>
@@ -228,7 +295,7 @@ export default function Ajukan() {
 
             <div className="mt-6 bg-[#FABD00] text-white p-4 rounded-xl shadow-sm">
               <p className="text-[10px] uppercase font-bold tracking-wider text-white/80">
-                Total Cicilan Bulanan
+                Total Cicilan Bulanan {isTopupMode && '(Tunggal)'}
               </p>
               <p className="text-2xl font-extrabold tracking-tight mt-1">
                 {formatRupiah(totalCicilanBulanan)}
@@ -246,7 +313,7 @@ export default function Ajukan() {
             </h5>
 
             <div className="flex justify-between items-center text-sm">
-              <span className="text-slate-500 font-medium">Nominal</span>
+              <span className="text-slate-500 font-medium">{isTopupMode ? 'Plafon Baru' : 'Nominal'}</span>
               <span className="font-bold text-slate-800">{formatRupiah(nominalNum)}</span>
             </div>
 

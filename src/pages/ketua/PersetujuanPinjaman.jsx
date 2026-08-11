@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ShieldCheck,
   CheckCircle2,
@@ -8,12 +9,14 @@ import {
   Calculator,
   X,
   Zap,
+  ArrowRightLeft,
 } from 'lucide-react';
 import api from '../../services/api';
 import { formatRupiah, formatTanggal } from '../../utils/format';
-import EmergencyBypass from './EmergencyBypass';
 
 export default function PersetujuanPinjaman() {
+  const navigate = useNavigate();
+
   const [activeTab, setActiveTab] = useState('regular');
 
   const [selectedItem, setSelectedItem] = useState(null);
@@ -21,6 +24,8 @@ export default function PersetujuanPinjaman() {
   const [rejectReason, setRejectReason] = useState('');
   const [toastMessage, setToastMessage] = useState(null);
   const [processing, setProcessing] = useState(false);
+  const [topupPreview, setTopupPreview] = useState(null);
+  const [loadingTopup, setLoadingTopup] = useState(false);
 
   const [pendingList, setPendingList] = useState([]);
   const [riwayatList, setRiwayatList] = useState([]);
@@ -61,6 +66,14 @@ export default function PersetujuanPinjaman() {
     setSelectedItem(item);
     setModalType(type);
     setRejectReason('');
+    setTopupPreview(null);
+
+    if (type === 'acc' && item.is_topup) {
+      setLoadingTopup(true);
+      api.get(`/admin/pinjaman/${item.id}`)
+        .then((res) => setTopupPreview(res.data.topup_preview))
+        .finally(() => setLoadingTopup(false));
+    }
   };
 
   const handleConfirmAcc = async () => {
@@ -194,7 +207,14 @@ export default function PersetujuanPinjaman() {
                     pendingList.map((item) => (
                       <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
                         <td className="p-4 pl-6">
-                          <div className="font-extrabold text-slate-900">{item.user.nama}</div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-extrabold text-slate-900">{item.user.nama}</span>
+                            {item.is_topup && (
+                              <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 text-[9px] font-black px-1.5 py-0.5 rounded uppercase">
+                                <ArrowRightLeft size={9} /> Top-Up
+                              </span>
+                            )}
+                          </div>
                           <div className="text-[10px] text-slate-400 font-medium">#{item.kode}</div>
                         </td>
                         <td className="p-4 font-black text-slate-900">{formatRupiah(item.jumlah)}</td>
@@ -286,7 +306,23 @@ export default function PersetujuanPinjaman() {
 
         </div>
       ) : (
-        <EmergencyBypass />
+        <div className="bg-amber-50/60 border border-amber-200 rounded-2xl p-8 text-center space-y-4">
+          <div className="w-12 h-12 bg-amber-400 text-slate-900 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+            <Zap size={24} />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-slate-900">Modul Emergency Bypass</h3>
+            <p className="text-xs text-slate-600 max-w-md mx-auto mt-1">
+              Fasilitas percepatan pengajuan pinjaman darurat anggota tanpa melalui alur antrean verifikasi standar.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/ketua/persetujuan/bypass')}
+            className="bg-slate-900 hover:bg-slate-800 text-amber-400 font-bold text-xs px-6 py-3 rounded-xl cursor-pointer shadow-xs"
+          >
+            Buka Form Emergency Bypass &#10148;
+          </button>
+        </div>
       )}
 
       {modalType === 'acc' && selectedItem && (
@@ -309,6 +345,38 @@ export default function PersetujuanPinjaman() {
             </div>
 
             <div className="py-5 space-y-5">
+              {selectedItem.is_topup && (
+                <div className="bg-blue-50/60 border-2 border-blue-200 rounded-2xl p-4 text-xs space-y-2.5">
+                  <div className="flex items-center gap-2 font-bold text-blue-900 pb-2 border-b border-blue-200/60">
+                    <ArrowRightLeft size={15} />
+                    <span>Pengajuan Top-Up</span>
+                  </div>
+
+                  {loadingTopup && <p className="text-slate-500">Menghitung sisa pinjaman lama...</p>}
+
+                  {!loadingTopup && topupPreview && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 font-medium">Melunasi Pinjaman</span>
+                        <span className="font-bold text-slate-900">#{topupPreview.pinjaman_lama_kode}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 font-medium">Progress Cicilan Lama</span>
+                        <span className="font-bold text-slate-900">{topupPreview.progress_persen}% tenor lunas</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 font-medium">Potongan Pelunasan</span>
+                        <span className="font-bold text-rose-600">- {formatRupiah(topupPreview.sisa_pokok_saat_ini)}</span>
+                      </div>
+                      <div className="flex justify-between pt-2 border-t border-blue-200/60">
+                        <span className="text-slate-700 font-bold">Pencairan Bersih</span>
+                        <span className="font-black text-emerald-600">{formatRupiah(topupPreview.pencairan_bersih)}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
               <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-xs space-y-2.5">
                 <div className="flex justify-between">
                   <span className="text-slate-400 font-medium">Nama Anggota:</span>

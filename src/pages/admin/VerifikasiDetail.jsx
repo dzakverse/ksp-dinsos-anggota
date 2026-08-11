@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Info, Calculator, CheckCircle2, XCircle, BadgeCheck, Clock } from 'lucide-react';
+import { ArrowLeft, Info, Calculator, CheckCircle2, XCircle, BadgeCheck, Clock, ArrowRightLeft } from 'lucide-react';
 import api from '../../services/api';
 import { formatRupiah, formatTanggal } from '../../utils/format';
 
@@ -56,7 +56,7 @@ export default function VerifikasiDetail() {
     return <div className="text-center py-20 text-rose-500 text-sm">{error || 'Data tidak ditemukan.'}</div>;
   }
 
-  const { pinjaman, simulasi } = data;
+  const { pinjaman, simulasi, topup_preview } = data;
   const anggota = pinjaman.user;
 
   return (
@@ -88,9 +88,17 @@ export default function VerifikasiDetail() {
           <div>
             <h1 className="text-xl font-bold text-slate-900 tracking-tight">{anggota.nama}</h1>
             <p className="text-xs text-slate-500 mt-0.5">NIP: {anggota.nip}</p>
-            <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-800 border border-amber-200/60 rounded-full text-[11px] font-semibold">
-              <Clock size={12} className="text-amber-600" />
-              <span>Menunggu Verifikasi</span>
+            <div className="mt-2 flex items-center gap-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-800 border border-amber-200/60 rounded-full text-[11px] font-semibold">
+                <Clock size={12} className="text-amber-600" />
+                <span>Menunggu Verifikasi</span>
+              </div>
+              {topup_preview && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-800 border border-blue-200/60 rounded-full text-[11px] font-semibold">
+                  <ArrowRightLeft size={12} className="text-blue-600" />
+                  <span>Top-Up dari #{topup_preview.pinjaman_lama_kode}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -140,6 +148,38 @@ export default function VerifikasiDetail() {
             </div>
           </div>
 
+          {topup_preview && (
+            <div className="bg-blue-50/60 rounded-2xl border-2 border-blue-200 shadow-xs overflow-hidden">
+              <div className="p-4 sm:p-5 bg-blue-100/60 border-b border-blue-200/60 flex items-center justify-between">
+                <h2 className="text-xs font-extrabold text-blue-900 uppercase tracking-wider">BREAKDOWN TOP-UP</h2>
+                <ArrowRightLeft size={16} className="text-blue-700" />
+              </div>
+
+              <div className="p-5 sm:p-6 space-y-3 text-xs">
+                <div className="flex justify-between items-center pb-3 border-b border-blue-200/50">
+                  <span className="text-slate-500 font-medium">Melunasi Pinjaman</span>
+                  <span className="font-bold text-slate-900">#{topup_preview.pinjaman_lama_kode}</span>
+                </div>
+                <div className="flex justify-between items-center pb-3 border-b border-blue-200/50">
+                  <span className="text-slate-500 font-medium">Progress Cicilan Lama</span>
+                  <span className="font-bold text-slate-900">{topup_preview.progress_persen}% tenor lunas</span>
+                </div>
+                <div className="flex justify-between items-center pb-3 border-b border-blue-200/50">
+                  <span className="text-slate-500 font-medium">Plafon Pengajuan Baru</span>
+                  <span className="font-bold text-slate-900">{formatRupiah(pinjaman.jumlah)}</span>
+                </div>
+                <div className="flex justify-between items-center pb-3 border-b border-blue-200/50">
+                  <span className="text-slate-500 font-medium">Potongan Pelunasan (Sisa Pokok Saat Ini)</span>
+                  <span className="font-bold text-rose-600">- {formatRupiah(topup_preview.sisa_pokok_saat_ini)}</span>
+                </div>
+                <div className="flex justify-between items-center pt-1">
+                  <span className="text-slate-700 font-bold">Pencairan Bersih ke Anggota</span>
+                  <span className="font-black text-emerald-600 text-base">{formatRupiah(topup_preview.pencairan_bersih)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
             <div className="p-4 sm:p-5 bg-blue-50/40 border-b border-slate-100 flex items-center justify-between">
               <h2 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">SIMULASI CICILAN</h2>
@@ -160,8 +200,12 @@ export default function VerifikasiDetail() {
                     <td className="py-3 text-right font-bold">{simulasi.pokok_bulanan.toLocaleString('id-ID')}</td>
                   </tr>
                   <tr className="bg-slate-50/50">
-                    <td className="py-3 px-2 font-medium">Bunga Pinjaman ({simulasi.bunga_persen}%)</td>
+                    <td className="py-3 px-2 font-medium">Bunga (1%)</td>
                     <td className="py-3 px-2 text-right font-bold">{simulasi.bunga.toLocaleString('id-ID')}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 font-medium">Biaya Administrasi</td>
+                    <td className="py-3 text-right font-bold">{simulasi.biaya_admin.toLocaleString('id-ID')}</td>
                   </tr>
                   <tr className="bg-slate-50/80 text-sm">
                     <td className="py-3.5 px-2 font-extrabold text-slate-900">Total Cicilan per Bulan</td>
@@ -171,16 +215,6 @@ export default function VerifikasiDetail() {
                   </tr>
                 </tbody>
               </table>
-
-              <div className="mt-4 p-3 bg-amber-50/80 border border-amber-100 rounded-xl text-[11px] text-amber-800 font-medium leading-relaxed flex justify-between items-center gap-2">
-                <span>
-                  Biaya Administrasi ({simulasi.biaya_admin_persen}%) — dipotong sekali dari saldo cair, bukan bagian dari cicilan bulanan.
-                </span>
-                <span className="font-bold whitespace-nowrap">{simulasi.biaya_admin.toLocaleString('id-ID')}</span>
-              </div>
-              <p className="mt-2 text-[11px] text-slate-400 font-medium">
-                Uang yang akan diterima anggota: <span className="font-bold text-slate-600">Rp {simulasi.uang_diterima.toLocaleString('id-ID')}</span>
-              </p>
             </div>
           </div>
 

@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   X,
+  ArrowRightLeft,
 } from 'lucide-react';
 import api from '../../services/api';
 import { formatRupiah, formatTanggal } from '../../utils/format';
@@ -21,8 +22,9 @@ export default function KendaliKebijakan() {
   const [maxLoan, setMaxLoan] = useState('0');
   const [interestRate, setInterestRate] = useState('0');
   const [mandatorySavings, setMandatorySavings] = useState('0');
+  const [minimalTopup, setMinimalTopup] = useState('30');
 
-  const [activeModal, setActiveModal] = useState(null); // 'loan' | 'interest' | 'savings' | null
+  const [activeModal, setActiveModal] = useState(null); // 'loan' | 'interest' | 'savings' | 'topup' | null
   const [notes, setNotes] = useState('');
   const [successToast, setSuccessToast] = useState(false);
 
@@ -34,6 +36,7 @@ export default function KendaliKebijakan() {
         setMaxLoan(String(Math.round(res.data.plafon_maksimal)));
         setInterestRate(String(res.data.suku_bunga_persen));
         setMandatorySavings(String(Math.round(res.data.simpanan_wajib_nominal)));
+        setMinimalTopup(String(res.data.minimal_progress_topup_persen));
       })
       .catch(() => setError('Gagal memuat kebijakan.'))
       .finally(() => setLoading(false));
@@ -53,6 +56,7 @@ export default function KendaliKebijakan() {
       if (activeModal === 'loan') payload.plafon_maksimal = Number(maxLoan);
       if (activeModal === 'interest') payload.suku_bunga_persen = Number(interestRate);
       if (activeModal === 'savings') payload.simpanan_wajib_nominal = Number(mandatorySavings);
+      if (activeModal === 'topup') payload.minimal_progress_topup_persen = Number(minimalTopup);
 
       const { data } = await api.put('/ketua/kebijakan', payload);
       setKebijakan(data);
@@ -241,6 +245,52 @@ export default function KendaliKebijakan() {
         </div>
       </div>
 
+      {/* CARD 4: MINIMAL PROGRESS TOP-UP */}
+      <div className="bg-white border-2 border-amber-400 rounded-2xl p-6 shadow-xs relative overflow-hidden transition-all">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-slate-900 flex items-center justify-center border border-blue-100/80">
+              <ArrowRightLeft size={20} />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Syarat Minimal Top-Up Pinjaman</h2>
+              <p className="text-xs text-slate-500">Minimal persentase tenor yang harus lunas sebelum anggota boleh mengajukan Top-Up.</p>
+            </div>
+          </div>
+          <Info size={18} className="text-slate-400" />
+        </div>
+
+        <div className="mt-5 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+          <div className="md:col-span-8">
+            <label className="text-[11px] font-bold text-slate-500 block mb-1.5">Minimal Progress Baru (%)</label>
+            <div className="relative">
+              <input
+                type="text"
+                value={minimalTopup}
+                onChange={(e) => setMinimalTopup(e.target.value.replace(/[^0-9.]/g, ''))}
+                className="w-full pl-4 pr-10 py-3 bg-white border border-slate-200 rounded-xl text-lg font-extrabold text-slate-900 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-700">%</span>
+            </div>
+          </div>
+          <div className="md:col-span-4 md:self-end">
+            <button
+              type="button"
+              onClick={() => setActiveModal('topup')}
+              className="w-full bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold text-xs py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
+            >
+              <RotateCcw size={16} />
+              <span>Update Sekarang</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-5 pt-4 border-t border-slate-100 flex items-center gap-2 text-xs text-slate-500">
+          <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
+          <span>Nilai saat ini: <strong className="text-slate-800">{kebijakan.minimal_progress_topup_persen}%</strong> — anggota baru bisa Top-Up setelah minimal segini dari tenor pinjaman lamanya lunas.</span>
+        </div>
+      </div>
+
       {activeModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-100">
@@ -269,6 +319,7 @@ export default function KendaliKebijakan() {
                     {activeModal === 'loan' && 'Plafon Maksimal Pinjaman'}
                     {activeModal === 'interest' && 'Suku Bunga Pinjaman (%)'}
                     {activeModal === 'savings' && 'Nominal Simpanan Wajib'}
+                    {activeModal === 'topup' && 'Syarat Minimal Top-Up (%)'}
                   </span>
                 </div>
 
@@ -278,6 +329,7 @@ export default function KendaliKebijakan() {
                     {activeModal === 'loan' && formatRupiah(kebijakan.plafon_maksimal)}
                     {activeModal === 'interest' && `${kebijakan.suku_bunga_persen}%`}
                     {activeModal === 'savings' && formatRupiah(kebijakan.simpanan_wajib_nominal)}
+                    {activeModal === 'topup' && `${kebijakan.minimal_progress_topup_persen}%`}
                   </span>
                 </div>
 
@@ -287,6 +339,7 @@ export default function KendaliKebijakan() {
                     {activeModal === 'loan' && `Rp ${formatRupiahInput(maxLoan)}`}
                     {activeModal === 'interest' && `${interestRate}%`}
                     {activeModal === 'savings' && `Rp ${formatRupiahInput(mandatorySavings)}`}
+                    {activeModal === 'topup' && `${minimalTopup}%`}
                   </span>
                 </div>
               </div>
