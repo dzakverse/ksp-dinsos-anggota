@@ -32,6 +32,10 @@ export default function KasKoperasi() {
       setFormError('Masukkan nominal yang valid.');
       return;
     }
+    if (Number(jumlah) > (data?.saldo_kas ?? 0)) {
+      setFormError(`Kas koperasi tidak mencukupi. Saldo kas saat ini hanya ${formatRupiah(data?.saldo_kas ?? 0)}.`);
+      return;
+    }
     if (!catatan.trim()) {
       setFormError('Catatan wajib diisi.');
       return;
@@ -150,8 +154,14 @@ export default function KasKoperasi() {
                   value={jumlah}
                   onChange={(e) => setJumlah(e.target.value)}
                   placeholder="Contoh: 500000"
-                  className="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-amber-400"
+                  className={`w-full p-3 bg-white border rounded-xl text-xs font-bold text-slate-900 focus:outline-none ${
+                    Number(jumlah) > (data?.saldo_kas ?? 0) ? 'border-rose-400 focus:border-rose-400' : 'border-slate-200 focus:border-amber-400'
+                  }`}
                 />
+                <p className={`text-[11px] mt-1 font-medium ${Number(jumlah) > (data?.saldo_kas ?? 0) ? 'text-rose-600' : 'text-slate-400'}`}>
+                  Saldo kas tersedia: {formatRupiah(data?.saldo_kas ?? 0)}
+                  {Number(jumlah) > (data?.saldo_kas ?? 0) && ' — melebihi saldo kas!'}
+                </p>
               </div>
               <div>
                 <label className="font-bold text-slate-700 block mb-1.5">Catatan (Wajib)</label>
@@ -171,8 +181,8 @@ export default function KasKoperasi() {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center gap-2 cursor-pointer disabled:opacity-60"
+                  disabled={submitting || Number(jumlah) > (data?.saldo_kas ?? 0)}
+                  className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <CheckCircle2 size={16} />
                   <span>{submitting ? 'Menyimpan...' : 'Konfirmasi Tarik'}</span>

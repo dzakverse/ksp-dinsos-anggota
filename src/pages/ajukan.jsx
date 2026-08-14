@@ -9,6 +9,7 @@ export default function Ajukan() {
   const [kebijakan, setKebijakan] = useState(null);
   const [pinjamanAktif, setPinjamanAktif] = useState(null);
   const [pengajuanPending, setPengajuanPending] = useState(null);
+  const [saldoKas, setSaldoKas] = useState(null);
   const [loadingAwal, setLoadingAwal] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -22,11 +23,13 @@ export default function Ajukan() {
     Promise.all([
       api.get('/kebijakan'),
       api.get('/pinjaman'),
+      api.get('/kas/saldo'),
     ])
-      .then(([kebijakanRes, pinjamanRes]) => {
+      .then(([kebijakanRes, pinjamanRes, kasRes]) => {
         setKebijakan(kebijakanRes.data);
         setPinjamanAktif(pinjamanRes.data?.pinjaman_aktif || null);
         setPengajuanPending(pinjamanRes.data?.pengajuan_pending || null);
+        setSaldoKas(Number(kasRes.data?.saldo_kas ?? 0));
       })
       .catch((err) => {
         console.error("Gagal memuat data awal:", err);
@@ -61,6 +64,9 @@ export default function Ajukan() {
   const totalCicilanBulanan = angsuranPokok + bungaPinjaman;
 
   const melebihiLimit = !loadingAwal && limitMaksimal > 0 && nominalNum > limitMaksimal;
+  // Kas koperasi tidak boleh negatif -> nominal pengajuan tidak boleh melebihi
+  // saldo kas yang benar-benar tersedia sekarang (bukan cuma limit plafon).
+  const melebihiKas = !loadingAwal && saldoKas !== null && nominalNum > saldoKas;
   const tidakBisaAjukan = isTopupMode && (progressBelumCukup || nominalKurangDariSisa);
 
   const formatRupiah = (num) => 'Rp ' + Math.round(num || 0).toLocaleString('id-ID');
@@ -80,6 +86,10 @@ export default function Ajukan() {
     }
     if (melebihiLimit) {
       setErrorMessage(`Nominal pengajuan melebihi limit maksimal (${formatRupiah(limitMaksimal)}).`);
+      return;
+    }
+    if (melebihiKas) {
+      setErrorMessage(`Pengajuan tidak bisa diproses karena kas koperasi tidak mencukupi. Saldo kas saat ini hanya ${formatRupiah(saldoKas)}.`);
       return;
     }
     if (nominalNum < 100000) {
@@ -228,14 +238,22 @@ export default function Ajukan() {
                 onChange={handleNominalChange}
                 placeholder="Masukkan nominal pinjaman"
                 className={`w-full px-4 py-3 rounded-xl border text-slate-800 font-semibold focus:outline-none focus:ring-2 transition-all ${
-                  melebihiLimit || nominalKurangDariSisa ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-200 focus:ring-blue-600'
+                  melebihiLimit || nominalKurangDariSisa || melebihiKas ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-200 focus:ring-blue-600'
                 }`}
               />
-              <p className={`text-[11px] mt-1 font-medium ${melebihiLimit || nominalKurangDariSisa ? 'text-rose-600' : 'text-slate-400'}`}>
+              <p className={`text-[11px] mt-1 font-medium ${melebihiLimit || nominalKurangDariSisa || melebihiKas ? 'text-rose-600' : 'text-slate-400'}`}>
                 Minimal: Rp 100.000 &bull; Maksimal: {formatRupiah(limitMaksimal)}
                 {melebihiLimit && ' — melebihi limit!'}
                 {nominalKurangDariSisa && ` — harus lebih besar dari sisa pinjaman lama (${formatRupiah(sisaPinjamanLama)})`}
               </p>
+              {melebihiKas && (
+                <div className="mt-2 bg-rose-50 border border-rose-200 rounded-xl p-3 flex items-start gap-2 text-rose-700">
+                  <AlertCircle size={15} className="shrink-0 mt-0.5" />
+                  <p className="text-[11px] font-semibold leading-relaxed">
+                    Kas koperasi sedang tidak mencukupi untuk pengajuan sebesar ini. Saldo kas saat ini hanya {formatRupiah(saldoKas)}. Coba ajukan nominal yang lebih kecil, atau tunggu sampai kas koperasi mencukupi.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div>
@@ -293,7 +311,7 @@ export default function Ajukan() {
 
             <button
               type="submit"
-              disabled={submitting || melebihiLimit || tidakBisaAjukan}
+              disabled={submitting || melebihiLimit || melebihiKas || tidakBisaAjukan}
               className="w-full py-3.5 bg-[#1e293b] hover:bg-slate-800 text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Send size={16} />
