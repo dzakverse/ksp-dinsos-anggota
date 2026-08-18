@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Bell } from 'lucide-react';
 import api, { getUserName } from '../services/api';
-
-const FOTO_DEFAULT = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60';
+import Avatar from './Avatar';
 
 export default function Header() {
   const location = useLocation();
@@ -23,13 +22,9 @@ export default function Header() {
         });
       })
       .catch(() => {
-        // Biarkan fallback dari localStorage/sessionStorage jika request gagal
       });
   }, []);
 
-  // Memetakan Judul & Subtitle berdasarkan path URL. Sebelumnya /ajukan,
-  // /edit, dan /sandi tidak terdaftar di sini -> jatuh ke default
-  // "KSP Sejahtera / Portal Anggota" alih-alih judul yang sesuai halaman.
   const getHeaderTitle = () => {
     switch (location.pathname) {
       case '/dashboard':
@@ -61,10 +56,6 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-6">
-        {/* Titik oranye "selalu ada notifikasi" dihapus -> sebelumnya nyala terus
-            walau tidak ada notifikasi beneran (belum ada sistem notifikasi di
-            backend), jadi menyesatkan anggota. Tombolnya tetap ada sebagai
-            placeholder untuk fitur notifikasi ke depannya. */}
         <button
           type="button"
           title="Fitur notifikasi akan segera hadir"
@@ -74,10 +65,10 @@ export default function Header() {
         </button>
 
         <div className="flex items-center gap-3">
-          <img 
-            src={profil.foto_url || FOTO_DEFAULT} 
-            className="w-9 h-9 rounded-full object-cover border" 
-            alt="Avatar"
+          <Avatar
+            nama={profil.nama}
+            fotoUrl={profil.foto_url}
+            className="w-9 h-9 rounded-full border"
           />
           <div className="text-right hidden sm:block">
             <h4 className="text-sm font-semibold text-slate-800">{profil.nama}</h4>

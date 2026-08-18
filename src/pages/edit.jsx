@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Lock, Save, ShieldAlert, AlertCircle } from 'lucide-react';
+import { Lock, Save, ShieldAlert, AlertCircle, Trash2 } from 'lucide-react';
 import api from '../services/api';
 import { formatTanggal } from '../utils/format';
+import Avatar from '../components/Avatar';
 
 export default function EditProfil() {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ export default function EditProfil() {
 
   const [uploadingFoto, setUploadingFoto] = useState(false);
   const [fotoError, setFotoError] = useState('');
+  const [hapusingFoto, setHapusingFoto] = useState(false);
 
   useEffect(() => {
     api.get('/profile')
@@ -83,6 +85,25 @@ export default function EditProfil() {
     }
   };
 
+  // Hapus foto profil -> balik ke avatar inisial (lihat components/Avatar.jsx).
+  // Dipisah dari handleFotoChange karena ini aksi destruktif tersendiri, bukan
+  // bagian dari alur ganti/upload foto.
+  const handleHapusFoto = async () => {
+    if (!window.confirm('Hapus foto profil? Setelah dihapus, avatar Anda akan menampilkan inisial nama.')) {
+      return;
+    }
+    setFotoError('');
+    setHapusingFoto(true);
+    try {
+      await api.delete('/profile/foto');
+      setProfile((prev) => ({ ...prev, foto_url: null }));
+    } catch (err) {
+      setFotoError(err.response?.data?.message || 'Gagal menghapus foto. Coba lagi.');
+    } finally {
+      setHapusingFoto(false);
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-20 text-slate-400 text-sm">Memuat data...</div>;
   }
@@ -90,8 +111,6 @@ export default function EditProfil() {
   const ttl = profile.tempat_lahir && profile.tanggal_lahir
     ? `${profile.tempat_lahir}, ${formatTanggal(profile.tanggal_lahir)}`
     : '-';
-  const fotoPreview = profile.foto_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80';
-
   return (
     <div className="space-y-6 animate-fade-in max-w-7xl mx-auto">
 
@@ -207,9 +226,12 @@ export default function EditProfil() {
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 sm:p-8 border-t-4 border-t-[#000D21] text-center flex flex-col items-center">
             <h4 className="text-base font-bold text-slate-800 mb-6">Foto Profil Anggota</h4>
 
-            <div className="w-32 h-32 rounded-full border-4 border-slate-100 shadow-inner overflow-hidden mb-6">
-              <img src={fotoPreview} alt="Foto Profil" className="w-full h-full object-cover" />
-            </div>
+            <Avatar
+              nama={profile.nama}
+              fotoUrl={profile.foto_url}
+              className="w-32 h-32 rounded-full border-4 border-slate-100 shadow-inner mb-6"
+              textClassName="text-3xl"
+            />
 
             <label
               className={`w-full py-3 font-bold rounded-xl text-xs block text-center transition-colors ${
@@ -227,6 +249,18 @@ export default function EditProfil() {
                 disabled={uploadingFoto}
               />
             </label>
+
+            {profile.foto_url && (
+              <button
+                type="button"
+                onClick={handleHapusFoto}
+                disabled={hapusingFoto || uploadingFoto}
+                className="w-full py-3 mt-2.5 font-bold rounded-xl text-xs flex items-center justify-center gap-2 text-rose-600 bg-rose-50 hover:bg-rose-100 transition-colors cursor-pointer disabled:opacity-60"
+              >
+                <Trash2 size={14} />
+                <span>{hapusingFoto ? 'Menghapus...' : 'Hapus Foto'}</span>
+              </button>
+            )}
 
             {fotoError && (
               <p className="text-[11px] text-rose-600 font-semibold mt-3">{fotoError}</p>

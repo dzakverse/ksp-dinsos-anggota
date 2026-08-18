@@ -8,15 +8,10 @@ export default function AdminLayout() {
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  const userRole = getUserRole() || 'BENDAHARA';
+  const userRole = getUserRole();
 
-  // Sebelumnya header ini cuma pakai nama dari localStorage/sessionStorage
-  // dan selalu tampil avatar inisial huruf - tidak pernah fetch /profile,
-  // jadi foto_url yang sudah diupload di halaman Profil tidak pernah kepakai
-  // di sini. Disamakan dengan pola yang sudah ada di components/Header.jsx
-  // (dipakai Anggota).
   const [profil, setProfil] = useState({
-    nama: getUserName() || 'Budi Santoso',
+    nama: getUserName(),
     foto_url: '',
   });
 
@@ -24,12 +19,11 @@ export default function AdminLayout() {
     api.get('/profile')
       .then((res) => {
         setProfil({
-          nama: res.data.nama || getUserName() || 'Budi Santoso',
+          nama: res.data.nama || getUserName(),
           foto_url: res.data.foto_url || '',
         });
       })
       .catch(() => {
-        // Biarkan fallback dari localStorage/sessionStorage kalau request gagal
       });
   }, []);
 
@@ -38,24 +32,20 @@ export default function AdminLayout() {
   return (
     <div className="flex min-h-screen bg-[#FBFBFD] font-sans">
       
-      {/* Sidebar Component */}
       <SidebarAdmin 
         onHoverChange={(hovered) => setIsSidebarHovered(hovered)}
         isMobileOpen={isMobileOpen}
         setIsMobileOpen={setIsMobileOpen}
       />
 
-      {/* Main Content Area */}
       <div 
         className={`flex-1 flex flex-col min-h-screen w-full transition-all duration-300 ease-in-out ${
-          /* Margin Kiri Khusus Layar Tablet/Desktop (md) */ ''
+        ''
         } ${isSidebarHovered ? 'md:ml-64' : 'md:ml-20'} ml-0`}
       >
         
-        {/* HEADER RESPONSIVE */}
         <header className="h-16 bg-white border-b border-slate-100 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-20 shadow-xs">
           
-          {/* Tombol Hamburger (Hanya muncul di HP / Layar Sempit) */}
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsMobileOpen(true)}
@@ -67,7 +57,6 @@ export default function AdminLayout() {
             <h1 className="text-sm font-bold text-slate-700 md:hidden">Portal Bendahara</h1>
           </div>
 
-          {/* Info User */}
           <div className="flex items-center gap-3 ml-auto">
             <div className="text-right hidden sm:block">
               <div className="text-xs font-bold text-slate-800">{userName}</div>
@@ -85,7 +74,6 @@ export default function AdminLayout() {
           </div>
         </header>
 
-        {/* AREA KONTEN (Pads responsif p-4 di HP, p-8 di Desktop) */}
         <main className="p-4 sm:p-6 md:p-8 flex-1 overflow-x-auto">
           <div className="max-w-7xl mx-auto">
             <Outlet />

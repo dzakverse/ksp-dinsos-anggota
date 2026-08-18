@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, Lock, Pencil, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Lock, Pencil, CheckCircle2, Trash2 } from 'lucide-react';
 import api from '../../services/api';
+import Avatar from '../../components/Avatar';
 
 // Sebelumnya ProfileAdmin.jsx (Bendahara) dan ProfileKetua.jsx (Ketua) adalah
 // 2 file terpisah dengan JSX yang hampir identik (~90%) - bedanya cuma:
@@ -31,6 +32,7 @@ export default function ProfilPengurus({ variant }) {
   const fileInputRef = useRef(null);
   const [uploadingFoto, setUploadingFoto] = useState(false);
   const [fotoError, setFotoError] = useState('');
+  const [hapusingFoto, setHapusingFoto] = useState(false);
 
   const isKetua = variant === 'KETUA';
   const basePath = isKetua ? '/ketua' : '/admin';
@@ -81,6 +83,23 @@ export default function ProfilPengurus({ variant }) {
     }
   };
 
+  // Hapus foto profil -> balik ke avatar inisial (lihat components/Avatar.jsx).
+  const handleHapusFoto = async () => {
+    if (!window.confirm('Hapus foto profil? Setelah dihapus, avatar Anda akan menampilkan inisial nama.')) {
+      return;
+    }
+    setFotoError('');
+    setHapusingFoto(true);
+    try {
+      await api.delete('/profile/foto');
+      setProfile((prev) => ({ ...prev, foto_url: null }));
+    } catch (err) {
+      setFotoError(err.response?.data?.message || 'Gagal menghapus foto. Coba lagi.');
+    } finally {
+      setHapusingFoto(false);
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-20 text-slate-400 text-sm">Memuat data...</div>;
   }
@@ -100,17 +119,15 @@ export default function ProfilPengurus({ variant }) {
 
           <div className="md:col-span-4 flex flex-col items-center text-center pr-0 md:pr-6 border-b md:border-b-0 md:border-r border-slate-100 pb-8 md:pb-0">
             <div className="relative mb-4">
-              <div
-                className={`w-28 h-28 rounded-full overflow-hidden border-4 shadow-inner bg-slate-200 ${
+              <Avatar
+                nama={profile?.nama}
+                fotoUrl={profile?.foto_url}
+                className={`w-28 h-28 rounded-full border-4 shadow-inner ${
                   isKetua ? 'border-amber-400/60' : 'border-slate-100'
                 }`}
-              >
-                <img
-                  src={profile?.foto_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300'}
-                  alt="Foto Profil"
-                  className="w-full h-full object-cover"
-                />
-              </div>
+                textClassName="text-2xl"
+                fallbackClassName={isKetua ? 'bg-[#081028] text-amber-400' : undefined}
+              />
               <button
                 type="button"
                 onClick={handlePilihFoto}
@@ -129,6 +146,18 @@ export default function ProfilPengurus({ variant }) {
                 disabled={uploadingFoto}
               />
             </div>
+
+            {profile?.foto_url && (
+              <button
+                type="button"
+                onClick={handleHapusFoto}
+                disabled={hapusingFoto || uploadingFoto}
+                className="mb-3 text-[11px] font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
+              >
+                <Trash2 size={12} />
+                {hapusingFoto ? 'Menghapus...' : 'Hapus Foto'}
+              </button>
+            )}
 
             {fotoError && (
               <p className="text-[11px] text-rose-600 font-semibold mb-2 max-w-[200px]">{fotoError}</p>

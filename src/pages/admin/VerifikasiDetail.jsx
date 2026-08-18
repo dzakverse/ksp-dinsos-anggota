@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Info, Calculator, CheckCircle2, XCircle, BadgeCheck, Clock, ArrowRightLeft } from 'lucide-react';
 import api from '../../services/api';
 import { formatRupiah, formatTanggal } from '../../utils/format';
+import Avatar from '../../components/Avatar';
 
 export default function VerifikasiDetail() {
   const navigate = useNavigate();
@@ -75,10 +76,11 @@ export default function VerifikasiDetail() {
       <div className="bg-white border-2 border-amber-400 rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="relative">
-            <img
-              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=150&auto=format&fit=crop"
-              alt={anggota.nama}
-              className="w-16 h-16 rounded-2xl object-cover border border-slate-100"
+            <Avatar
+              nama={anggota.nama}
+              fotoUrl={anggota.foto_url}
+              className="w-16 h-16 rounded-2xl border border-slate-100"
+              textClassName="text-lg"
             />
             <div className="absolute -bottom-1 -right-1 bg-slate-900 text-amber-400 rounded-full p-1 border-2 border-white">
               <BadgeCheck size={12} />

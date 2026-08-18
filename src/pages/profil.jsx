@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import { formatTanggal } from '../utils/format';
+import Avatar from '../components/Avatar';
 
 export default function Profil() {
   const [data, setData] = useState(null);
@@ -31,7 +32,6 @@ export default function Profil() {
     return <div className="text-center py-20 text-rose-500 text-sm">{error}</div>;
   }
 
-  const foto = data.foto_url
   const ttl = data.tempat_lahir && data.tanggal_lahir
     ? `${data.tempat_lahir}, ${formatTanggal(data.tanggal_lahir)}`
     : '-';
@@ -45,10 +45,11 @@ export default function Profil() {
 
           <div className="flex flex-col items-center gap-3 w-full md:w-auto">
             <div className="relative">
-              <img
-                src={foto}
-                alt={data.nama}
-                className="w-32 h-32 sm:w-36 sm:h-36 rounded-full object-cover border-4 border-slate-100 shadow-inner"
+              <Avatar
+                nama={data.nama}
+                fotoUrl={data.foto_url}
+                className="w-32 h-32 sm:w-36 sm:h-36 rounded-full border-4 border-slate-100 shadow-inner"
+                textClassName="text-3xl"
               />
             </div>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500 text-white shadow-sm">
