@@ -181,7 +181,15 @@ export default function Pinjaman() {
                 <tr><td colSpan={4} className="p-6 text-center text-slate-400 text-xs">Belum ada pengajuan pinjaman.</td></tr>
               )}
               {riwayat.map((item) => {
-                const badge = STATUS_BADGE[item.status];
+                // Fallback kalau backend suatu saat kirim status yang belum
+                // terdaftar di STATUS_BADGE -> sebelumnya `badge` bisa undefined
+                // dan `badge.icon` di bawah bikin halaman crash. Pola fallback ini
+                // dicontek dari DetailAnggota.jsx (Bendahara) yang sudah benar.
+                const badge = STATUS_BADGE[item.status] || {
+                  label: item.status || 'Diproses',
+                  cls: 'bg-slate-100 text-slate-600 border-slate-200',
+                  icon: Clock,
+                };
                 const Icon = badge.icon;
                 return (
                   <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">

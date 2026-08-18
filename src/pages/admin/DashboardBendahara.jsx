@@ -12,14 +12,14 @@ import {
   X,
   Send,
 } from 'lucide-react';
-import api from '../../services/api';
+import api, { getUserName } from '../../services/api';
 import { formatRupiah, formatTanggal, formatWaktuAktivitas } from '../../utils/format';
 
 export default function DashboardBendahara() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const userName = localStorage.getItem('userName') || 'Bendahara';
+  const userName = getUserName() || 'Bendahara';
 
   // ---- Konfirmasi Penarikan Simpanan Sukarela (request dari Anggota, status PENDING) ----
   const [pendingTarik, setPendingTarik] = useState([]);

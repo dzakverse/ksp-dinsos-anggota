@@ -11,6 +11,7 @@ import {
   Building2,
   AlertTriangle,
 } from 'lucide-react';
+import { getUserName } from '../services/api';
 
 export default function KetuaLayout() {
   const navigate = useNavigate();
@@ -21,14 +22,21 @@ export default function KetuaLayout() {
   const [showConfirm, setShowConfirm] = useState(false);
 
   const currentUser = {
-    name: localStorage.getItem('userName') || 'Ketua',
+    name: getUserName() || 'Ketua',
     role: 'KETUA',
   };
 
   const processLogout = () => {
+    // Bersihkan localStorage & sessionStorage sekaligus -> kalau login tanpa
+    // centang "Ingat Saya", token disimpan di sessionStorage, jadi kalau di
+    // sini cuma localStorage yang dibersihkan, token session itu masih
+    // nyangkut walau sudah klik Keluar.
     localStorage.removeItem('token');
     localStorage.removeItem('userRole');
     localStorage.removeItem('userName');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('userRole');
+    sessionStorage.removeItem('userName');
     navigate('/login', { replace: true });
   };
 

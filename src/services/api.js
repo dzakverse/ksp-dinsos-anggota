@@ -7,9 +7,35 @@ const api = axios.create({
   },
 });
 
-// Tempel token dari localStorage otomatis ke setiap request
+// Ambil session dari localStorage (kalau checkbox "Ingat Saya" dicentang saat
+// login -> persist walau browser ditutup) ATAU sessionStorage (kalau tidak
+// dicentang -> otomatis hilang begitu tab/browser ditutup). Sebelumnya
+// checkbox "Ingat Saya" di login.jsx cuma UI kosong tanpa efek apa pun,
+// token selalu ditaruh di localStorage terlepas dicentang atau tidak.
+export function getToken() {
+  return localStorage.getItem('token') || sessionStorage.getItem('token');
+}
+
+export function getUserRole() {
+  return localStorage.getItem('userRole') || sessionStorage.getItem('userRole');
+}
+
+export function getUserName() {
+  return localStorage.getItem('userName') || sessionStorage.getItem('userName');
+}
+
+function clearSession() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('userRole');
+  localStorage.removeItem('userName');
+  sessionStorage.removeItem('token');
+  sessionStorage.removeItem('userRole');
+  sessionStorage.removeItem('userName');
+}
+
+// Tempel token otomatis ke setiap request
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = getToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -21,9 +47,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('userRole');
-      localStorage.removeItem('userName');
+      clearSession();
       window.location.href = '/login';
     }
     return Promise.reject(error);

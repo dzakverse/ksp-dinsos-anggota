@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import SidebarAdmin from '../components/seidebaradmin';
+import SidebarAdmin from '../components/SidebarAdmin';
 import { Menu } from 'lucide-react';
+import { getUserName, getUserRole } from '../services/api';
 
 export default function AdminLayout() {
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  const userName = localStorage.getItem('userName') || 'Budi Santoso';
-  const userRole = localStorage.getItem('userRole') || 'BENDAHARA';
+  const userName = getUserName() || 'Budi Santoso';
+  const userRole = getUserRole() || 'BENDAHARA';
 
   return (
     <div className="flex min-h-screen bg-[#FBFBFD] font-sans">

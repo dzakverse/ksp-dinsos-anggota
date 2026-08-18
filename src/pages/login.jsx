@@ -27,9 +27,20 @@ const handleLogin = async (e) => {
         password: password,
       });
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('userRole', data.user.role);
-      localStorage.setItem('userName', data.user.nama);
+      // "Ingat Saya" dicentang -> simpan di localStorage (persist walau browser
+      // ditutup). Tidak dicentang -> simpan di sessionStorage (otomatis hilang
+      // begitu tab/browser ditutup). Storage yang tidak dipakai dibersihkan
+      // dulu supaya tidak ada token basi nyangkut di storage yang lain.
+      const storage = rememberMe ? localStorage : sessionStorage;
+      const storageLain = rememberMe ? sessionStorage : localStorage;
+
+      storageLain.removeItem('token');
+      storageLain.removeItem('userRole');
+      storageLain.removeItem('userName');
+
+      storage.setItem('token', data.token);
+      storage.setItem('userRole', data.user.role);
+      storage.setItem('userName', data.user.nama);
 
       // Redirect otomatis sesuai Role
       if (data.user.role === 'ANGGOTA') {

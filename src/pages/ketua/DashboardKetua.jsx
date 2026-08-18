@@ -8,14 +8,14 @@ import {
   Clock,
   ShieldCheck,
 } from 'lucide-react';
-import api from '../../services/api';
+import api, { getUserName } from '../../services/api';
 import { formatRupiah, formatWaktuAktivitas } from '../../utils/format';
 
 export default function DashboardKetua() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const userName = localStorage.getItem('userName') || 'Ketua';
+  const userName = getUserName() || 'Ketua';
 
   useEffect(() => {
     api.get('/admin/dashboard')

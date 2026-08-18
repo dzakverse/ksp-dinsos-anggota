@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Bell } from 'lucide-react';
-import api from '../services/api';
+import api, { getUserName } from '../services/api';
 
 const FOTO_DEFAULT = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60';
 
 export default function Header() {
   const location = useLocation();
   const [profil, setProfil] = useState({
-    nama: localStorage.getItem('userName') || 'Anggota',
+    nama: getUserName() || 'Anggota',
     id_anggota: '',
     foto_url: '',
   });
@@ -17,17 +17,19 @@ export default function Header() {
     api.get('/profile')
       .then((res) => {
         setProfil({
-          nama: res.data.nama || localStorage.getItem('userName') || 'Anggota',
+          nama: res.data.nama || getUserName() || 'Anggota',
           id_anggota: res.data.id_anggota || '',
           foto_url: res.data.foto_url || '',
         });
       })
       .catch(() => {
-        // Biarkan fallback dari localStorage jika request gagal
+        // Biarkan fallback dari localStorage/sessionStorage jika request gagal
       });
   }, []);
 
-  // Memetakan Judul & Subtitle berdasarkan path URL
+  // Memetakan Judul & Subtitle berdasarkan path URL. Sebelumnya /ajukan,
+  // /edit, dan /sandi tidak terdaftar di sini -> jatuh ke default
+  // "KSP Sejahtera / Portal Anggota" alih-alih judul yang sesuai halaman.
   const getHeaderTitle = () => {
     switch (location.pathname) {
       case '/dashboard':
@@ -36,8 +38,14 @@ export default function Header() {
         return { title: 'Simpananku', subtitle: 'Kelola simpanan dan riwayat transaksi Anda' };
       case '/pinjaman':
         return { title: 'Pinjaman', subtitle: 'Pengajuan dan status pinjaman Anda' };
+      case '/ajukan':
+        return { title: 'Ajukan Pinjaman', subtitle: 'Isi formulir pengajuan pinjaman baru' };
       case '/profil':
         return { title: 'Profil Saya', subtitle: 'Kelola informasi akun Anda' };
+      case '/edit':
+        return { title: 'Edit Profil', subtitle: 'Perbarui informasi kontak Anda' };
+      case '/sandi':
+        return { title: 'Ubah Kata Sandi', subtitle: 'Kelola keamanan akun Anda' };
       default:
         return { title: 'KSP Sejahtera', subtitle: 'Portal Anggota' };
     }
@@ -53,9 +61,16 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-6">
-        <button className="p-2.5 bg-slate-50 hover:bg-slate-100 rounded-full relative transition-colors">
+        {/* Titik oranye "selalu ada notifikasi" dihapus -> sebelumnya nyala terus
+            walau tidak ada notifikasi beneran (belum ada sistem notifikasi di
+            backend), jadi menyesatkan anggota. Tombolnya tetap ada sebagai
+            placeholder untuk fitur notifikasi ke depannya. */}
+        <button
+          type="button"
+          title="Fitur notifikasi akan segera hadir"
+          className="p-2.5 bg-slate-50 hover:bg-slate-100 rounded-full relative transition-colors cursor-not-allowed"
+        >
           <Bell size={18} className="text-slate-600" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full"></span>
         </button>
 
         <div className="flex items-center gap-3">
