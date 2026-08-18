@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { getToken, getUserRole } from './services/api';
 
 // 1. IMPORT LAYOUTS
 import Layout from './components/layout';               // Layout untuk User/Anggota
@@ -35,15 +36,21 @@ import ProfileKetua from './pages/ketua/ProfileKetua';
 import UbahPasswordKetua from './pages/ketua/UbahPasswordKetua';
 
 // 4. PROTECTED ROUTE HELPERS (Pengaman Akses)
+// PENTING: pakai getToken()/getUserRole() dari services/api.js (cek localStorage
+// MAUPUN sessionStorage), JANGAN akses localStorage langsung di sini. Kalau akses
+// langsung, user yang login TANPA centang "Ingat Saya" (token disimpan di
+// sessionStorage) akan selalu dianggap belum login oleh guard ini begitu pindah
+// halaman/refresh, walau API call lain tetap jalan normal (karena axios
+// interceptor di api.js sudah benar ceknya).
 const ProtectedUserRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
+  const token = getToken();
   if (!token) return <Navigate to="/login" replace />;
   return children;
 };
 
 const ProtectedAdminRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
-  const role = localStorage.getItem('userRole');
+  const token = getToken();
+  const role = getUserRole();
 
   if (!token) return <Navigate to="/login" replace />;
   // Hanya BENDAHARA dan KETUA yang boleh masuk
@@ -53,8 +60,8 @@ const ProtectedAdminRoute = ({ children }) => {
 };
 
 const ProtectedKetuaRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
-  const role = localStorage.getItem('userRole');
+  const token = getToken();
+  const role = getUserRole();
 
   if (!token) return <Navigate to="/login" replace />;
   // Hanya KETUA yang boleh masuk (Bendahara tidak boleh akses fitur eksekutif Ketua)
