@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, Lock, Pencil, CheckCircle2 } from 'lucide-react';
 import api from '../../services/api';
@@ -28,6 +28,10 @@ export default function ProfilPengurus({ variant }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const fileInputRef = useRef(null);
+  const [uploadingFoto, setUploadingFoto] = useState(false);
+  const [fotoError, setFotoError] = useState('');
+
   const isKetua = variant === 'KETUA';
   const basePath = isKetua ? '/ketua' : '/admin';
   const privileges = PRIVILEGES[isKetua ? 'KETUA' : 'BENDAHARA'];
@@ -39,6 +43,43 @@ export default function ProfilPengurus({ variant }) {
       .then((res) => setProfile(res.data))
       .finally(() => setLoading(false));
   }, []);
+
+  const handlePilihFoto = () => fileInputRef.current?.click();
+
+  // Sama seperti pages/edit.jsx (Anggota) - foto disimpan lewat endpoint
+  // multipart khusus /profile/foto, dan dipakai bareng oleh Bendahara maupun
+  // Ketua karena keduanya sama-sama mengganti foto profil DIRI SENDIRI.
+  const handleFotoChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setFotoError('');
+
+    const tipeValid = ['image/jpeg', 'image/jpg', 'image/png'].includes(file.type);
+    if (!tipeValid) {
+      setFotoError('Format file harus JPG atau PNG.');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setFotoError('Ukuran file maksimal 2MB.');
+      e.target.value = '';
+      return;
+    }
+
+    setUploadingFoto(true);
+    const formData = new FormData();
+    formData.append('foto', file);
+
+    try {
+      const { data } = await api.post('/profile/foto', formData);
+      setProfile((prev) => ({ ...prev, foto_url: data.foto_url }));
+    } catch (err) {
+      setFotoError(err.response?.data?.message || 'Gagal upload foto. Coba lagi.');
+    } finally {
+      setUploadingFoto(false);
+      e.target.value = '';
+    }
+  };
 
   if (loading) {
     return <div className="text-center py-20 text-slate-400 text-sm">Memuat data...</div>;
@@ -59,28 +100,39 @@ export default function ProfilPengurus({ variant }) {
 
           <div className="md:col-span-4 flex flex-col items-center text-center pr-0 md:pr-6 border-b md:border-b-0 md:border-r border-slate-100 pb-8 md:pb-0">
             <div className="relative mb-4">
-              {isKetua ? (
-                <div className="w-28 h-28 rounded-full bg-[#081028] flex items-center justify-center text-amber-400 font-black text-4xl border-4 border-amber-400/60 shadow-inner">
-                  {profile?.nama?.charAt(0) || 'K'}
-                </div>
-              ) : (
-                <>
-                  <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-slate-100 shadow-inner bg-slate-200">
-                    <img
-                      src={profile?.foto_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300'}
-                      alt="Foto Profil"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <button
-                    className="absolute bottom-1 right-1 w-8 h-8 bg-[#0A1128] hover:bg-slate-800 text-white rounded-full flex items-center justify-center border-2 border-white shadow-md transition-all cursor-pointer"
-                    title="Ubah Foto Profil"
-                  >
-                    <Pencil size={13} />
-                  </button>
-                </>
-              )}
+              <div
+                className={`w-28 h-28 rounded-full overflow-hidden border-4 shadow-inner bg-slate-200 ${
+                  isKetua ? 'border-amber-400/60' : 'border-slate-100'
+                }`}
+              >
+                <img
+                  src={profile?.foto_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300'}
+                  alt="Foto Profil"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handlePilihFoto}
+                disabled={uploadingFoto}
+                className="absolute bottom-1 right-1 w-8 h-8 bg-[#0A1128] hover:bg-slate-800 text-white rounded-full flex items-center justify-center border-2 border-white shadow-md transition-all cursor-pointer disabled:opacity-60"
+                title="Ubah Foto Profil"
+              >
+                <Pencil size={13} />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png"
+                className="hidden"
+                onChange={handleFotoChange}
+                disabled={uploadingFoto}
+              />
             </div>
+
+            {fotoError && (
+              <p className="text-[11px] text-rose-600 font-semibold mb-2 max-w-[200px]">{fotoError}</p>
+            )}
 
             <h2 className="text-xl font-bold text-slate-900 tracking-tight">{profile?.nama}</h2>
             <div className="mt-1.5 inline-block bg-amber-50 text-amber-700 font-bold text-[11px] px-3 py-1 rounded-full border border-amber-200/60">

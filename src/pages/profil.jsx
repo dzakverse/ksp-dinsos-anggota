@@ -31,7 +31,7 @@ export default function Profil() {
     return <div className="text-center py-20 text-rose-500 text-sm">{error}</div>;
   }
 
-  const foto = data.foto_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80';
+  const foto = data.foto_url
   const ttl = data.tempat_lahir && data.tanggal_lahir
     ? `${data.tempat_lahir}, ${formatTanggal(data.tanggal_lahir)}`
     : '-';

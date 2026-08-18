@@ -7,11 +7,6 @@ const api = axios.create({
   },
 });
 
-// Ambil session dari localStorage (kalau checkbox "Ingat Saya" dicentang saat
-// login -> persist walau browser ditutup) ATAU sessionStorage (kalau tidak
-// dicentang -> otomatis hilang begitu tab/browser ditutup). Sebelumnya
-// checkbox "Ingat Saya" di login.jsx cuma UI kosong tanpa efek apa pun,
-// token selalu ditaruh di localStorage terlepas dicentang atau tidak.
 export function getToken() {
   return localStorage.getItem('token') || sessionStorage.getItem('token');
 }
@@ -39,10 +34,14 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  }
+
   return config;
 });
 
-// Kalau token expired/invalid (401), otomatis lempar balik ke login
 api.interceptors.response.use(
   (response) => response,
   (error) => {

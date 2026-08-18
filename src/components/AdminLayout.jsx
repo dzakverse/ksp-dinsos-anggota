@@ -1,15 +1,39 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import SidebarAdmin from '../components/SidebarAdmin';
 import { Menu } from 'lucide-react';
-import { getUserName, getUserRole } from '../services/api';
+import api, { getUserName, getUserRole } from '../services/api';
 
 export default function AdminLayout() {
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  const userName = getUserName() || 'Budi Santoso';
   const userRole = getUserRole() || 'BENDAHARA';
+
+  // Sebelumnya header ini cuma pakai nama dari localStorage/sessionStorage
+  // dan selalu tampil avatar inisial huruf - tidak pernah fetch /profile,
+  // jadi foto_url yang sudah diupload di halaman Profil tidak pernah kepakai
+  // di sini. Disamakan dengan pola yang sudah ada di components/Header.jsx
+  // (dipakai Anggota).
+  const [profil, setProfil] = useState({
+    nama: getUserName() || 'Budi Santoso',
+    foto_url: '',
+  });
+
+  useEffect(() => {
+    api.get('/profile')
+      .then((res) => {
+        setProfil({
+          nama: res.data.nama || getUserName() || 'Budi Santoso',
+          foto_url: res.data.foto_url || '',
+        });
+      })
+      .catch(() => {
+        // Biarkan fallback dari localStorage/sessionStorage kalau request gagal
+      });
+  }, []);
+
+  const userName = profil.nama;
 
   return (
     <div className="flex min-h-screen bg-[#FBFBFD] font-sans">
@@ -51,8 +75,12 @@ export default function AdminLayout() {
                 {userRole}
               </div>
             </div>
-            <div className="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 font-bold text-sm shrink-0">
-              {userName.charAt(0)}
+            <div className="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 font-bold text-sm shrink-0 overflow-hidden">
+              {profil.foto_url ? (
+                <img src={profil.foto_url} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                userName.charAt(0)
+              )}
             </div>
           </div>
         </header>

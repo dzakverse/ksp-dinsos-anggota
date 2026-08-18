@@ -16,6 +16,9 @@ export default function EditProfil() {
   const [whatsapp, setWhatsapp] = useState('');
   const [email, setEmail] = useState('');
 
+  const [uploadingFoto, setUploadingFoto] = useState(false);
+  const [fotoError, setFotoError] = useState('');
+
   useEffect(() => {
     api.get('/profile')
       .then((res) => {
@@ -40,6 +43,43 @@ export default function EditProfil() {
       setErrorMessage(err.response?.data?.message || 'Gagal menyimpan perubahan. Coba lagi.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Upload foto langsung begitu file dipilih (terpisah dari form "Simpan
+  // Perubahan" di atas, karena foto disimpan lewat endpoint khusus multipart
+  // /profile/foto, bukan lewat body JSON PUT /profile).
+  const handleFotoChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setFotoError('');
+
+    // Validasi ringan di sisi client biar user cepat dapat feedback -
+    // validasi yang menentukan tetap di backend (lihat ProfileController::updateFoto).
+    const tipeValid = ['image/jpeg', 'image/jpg', 'image/png'].includes(file.type);
+    if (!tipeValid) {
+      setFotoError('Format file harus JPG atau PNG.');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setFotoError('Ukuran file maksimal 2MB.');
+      e.target.value = '';
+      return;
+    }
+
+    setUploadingFoto(true);
+    const formData = new FormData();
+    formData.append('foto', file);
+
+    try {
+      const { data } = await api.post('/profile/foto', formData);
+      setProfile((prev) => ({ ...prev, foto_url: data.foto_url }));
+    } catch (err) {
+      setFotoError(err.response?.data?.message || 'Gagal upload foto. Coba lagi.');
+    } finally {
+      setUploadingFoto(false);
+      e.target.value = '';
     }
   };
 
@@ -171,10 +211,26 @@ export default function EditProfil() {
               <img src={fotoPreview} alt="Foto Profil" className="w-full h-full object-cover" />
             </div>
 
-            <label className="w-full py-3 bg-slate-200 text-slate-500 font-bold rounded-xl text-xs block cursor-not-allowed" title="Upload foto akan tersedia setelah fitur penyimpanan file diaktifkan">
-              Pilih Foto Baru (Segera Hadir)
-              <input type="file" className="hidden" accept="image/*" disabled />
+            <label
+              className={`w-full py-3 font-bold rounded-xl text-xs block text-center transition-colors ${
+                uploadingFoto
+                  ? 'bg-slate-200 text-slate-400 cursor-wait'
+                  : 'bg-[#0A1128] hover:bg-slate-800 text-white cursor-pointer'
+              }`}
+            >
+              {uploadingFoto ? 'Mengupload...' : 'Pilih Foto Baru'}
+              <input
+                type="file"
+                className="hidden"
+                accept="image/jpeg,image/png"
+                onChange={handleFotoChange}
+                disabled={uploadingFoto}
+              />
             </label>
+
+            {fotoError && (
+              <p className="text-[11px] text-rose-600 font-semibold mt-3">{fotoError}</p>
+            )}
 
             <p className="text-[11px] text-slate-400 font-medium mt-3">
               Format JPG, PNG. Ukuran maks. 2MB.

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -11,7 +11,7 @@ import {
   Building2,
   AlertTriangle,
 } from 'lucide-react';
-import { getUserName } from '../services/api';
+import api, { getUserName } from '../services/api';
 
 export default function KetuaLayout() {
   const navigate = useNavigate();
@@ -21,8 +21,31 @@ export default function KetuaLayout() {
   // State untuk Modal Konfirmasi Logout
   const [showConfirm, setShowConfirm] = useState(false);
 
+  // Sebelumnya header ini cuma pakai nama dari localStorage/sessionStorage
+  // dan selalu tampil avatar inisial huruf - tidak pernah fetch /profile,
+  // jadi foto_url yang sudah diupload di halaman Profil tidak pernah kepakai
+  // di sini. Disamakan dengan pola yang sudah ada di components/Header.jsx
+  // (dipakai Anggota) & AdminLayout.jsx (dipakai Bendahara).
+  const [profil, setProfil] = useState({
+    nama: getUserName() || 'Ketua',
+    foto_url: '',
+  });
+
+  useEffect(() => {
+    api.get('/profile')
+      .then((res) => {
+        setProfil({
+          nama: res.data.nama || getUserName() || 'Ketua',
+          foto_url: res.data.foto_url || '',
+        });
+      })
+      .catch(() => {
+        // Biarkan fallback dari localStorage/sessionStorage kalau request gagal
+      });
+  }, []);
+
   const currentUser = {
-    name: getUserName() || 'Ketua',
+    name: profil.nama,
     role: 'KETUA',
   };
 
@@ -159,8 +182,12 @@ export default function KetuaLayout() {
               <div className="text-xs font-bold text-slate-800">{currentUser.name}</div>
               <div className="text-[10px] font-bold text-amber-600 tracking-wider uppercase">{currentUser.role}</div>
             </div>
-            <div className="w-9 h-9 rounded-full bg-[#081028] border-2 border-amber-400 flex items-center justify-center text-amber-400 font-bold text-sm">
-              {currentUser.name.charAt(0)}
+            <div className="w-9 h-9 rounded-full bg-[#081028] border-2 border-amber-400 flex items-center justify-center text-amber-400 font-bold text-sm overflow-hidden">
+              {profil.foto_url ? (
+                <img src={profil.foto_url} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                currentUser.name.charAt(0)
+              )}
             </div>
           </div>
         </header>
