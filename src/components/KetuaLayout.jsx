@@ -16,16 +16,9 @@ import api, { getUserName } from '../services/api';
 export default function KetuaLayout() {
   const navigate = useNavigate();
   
-  // State Hover untuk Sidebar
   const [isHovered, setIsHovered] = useState(false);
-  // State untuk Modal Konfirmasi Logout
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // Sebelumnya header ini cuma pakai nama dari localStorage/sessionStorage
-  // dan selalu tampil avatar inisial huruf - tidak pernah fetch /profile,
-  // jadi foto_url yang sudah diupload di halaman Profil tidak pernah kepakai
-  // di sini. Disamakan dengan pola yang sudah ada di components/Header.jsx
-  // (dipakai Anggota) & AdminLayout.jsx (dipakai Bendahara).
   const [profil, setProfil] = useState({
     nama: getUserName() || 'Ketua',
     foto_url: '',
@@ -40,7 +33,6 @@ export default function KetuaLayout() {
         });
       })
       .catch(() => {
-        // Biarkan fallback dari localStorage/sessionStorage kalau request gagal
       });
   }, []);
 
@@ -50,10 +42,6 @@ export default function KetuaLayout() {
   };
 
   const processLogout = () => {
-    // Bersihkan localStorage & sessionStorage sekaligus -> kalau login tanpa
-    // centang "Ingat Saya", token disimpan di sessionStorage, jadi kalau di
-    // sini cuma localStorage yang dibersihkan, token session itu masih
-    // nyangkut walau sudah klik Keluar.
     localStorage.removeItem('token');
     localStorage.removeItem('userRole');
     localStorage.removeItem('userName');
@@ -75,10 +63,9 @@ export default function KetuaLayout() {
   return (
     <div className="flex h-screen bg-slate-50 font-sans overflow-hidden relative">
       
-      {/* ================= SIDEBAR HOVER MODE ================= */}
       <aside 
-        onMouseEnter={() => setIsHovered(true)}  // Saat kursor masuk -> Melebar
-        onMouseLeave={() => setIsHovered(false)} // Saat kursor keluar -> Menciut
+        onMouseEnter={() => setIsHovered(true)}  
+        onMouseLeave={() => setIsHovered(false)} 
         className={`
           bg-[#081028] text-white flex flex-col justify-between shrink-0 relative
           transition-all duration-300 ease-in-out z-30
@@ -86,7 +73,6 @@ export default function KetuaLayout() {
         `}
       >
         <div>
-          {/* Header / Logo */}
           <div className="p-6 flex items-center justify-between overflow-hidden">
             {isHovered ? (
               <div className="animate-in fade-in duration-200">
@@ -102,7 +88,6 @@ export default function KetuaLayout() {
             )}
           </div>
 
-          {/* Menu Navigasi */}
           <nav className="px-3 space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -110,7 +95,7 @@ export default function KetuaLayout() {
                 <NavLink
                   key={item.path}
                   to={item.path}
-                  title={!isHovered ? item.label : ''} // Tooltip muncul saat sidebar dalam mode ringkas
+                  title={!isHovered ? item.label : ''} 
                   className={({ isActive }) =>
                     `flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
                       isActive
@@ -131,7 +116,6 @@ export default function KetuaLayout() {
           </nav>
         </div>
 
-        {/* Bottom Actions */}
         <div className="p-4 space-y-3">
           {isHovered ? (
             <div className="space-y-2 animate-in fade-in duration-200">
@@ -172,10 +156,8 @@ export default function KetuaLayout() {
         </div>
       </aside>
 
-      {/* ================= AREA UTAMA ================= */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         
-        {/* Header Profil */}
         <header className="h-16 bg-white border-b border-slate-200/80 px-8 flex items-center justify-end shrink-0">
           <div className="flex items-center gap-3">
             <div className="text-right">
@@ -192,7 +174,6 @@ export default function KetuaLayout() {
           </div>
         </header>
 
-        {/* Content */}
         <main className="flex-1 overflow-y-auto p-8">
           <div className="max-w-7xl mx-auto">
             <Outlet />
@@ -201,7 +182,6 @@ export default function KetuaLayout() {
 
       </div>
 
-      {/* ================= MODAL KONFIRMASI KELUAR ================= */}
       {showConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden p-6 border border-slate-100 text-center">

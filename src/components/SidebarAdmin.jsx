@@ -18,7 +18,6 @@ export default function SidebarAdmin({ onHoverChange, isMobileOpen, setIsMobileO
   const [showConfirm, setShowConfirm] = useState(false);
 
   const handleMouseEnter = () => {
-    // Hanya aktifkan hover di layar desktop (width >= 768px)
     if (window.innerWidth >= 768) {
       setIsHovered(true);
       if (onHoverChange) onHoverChange(true);
@@ -33,9 +32,6 @@ export default function SidebarAdmin({ onHoverChange, isMobileOpen, setIsMobileO
   };
 
   const processLogout = () => {
-    // localStorage.clear() saja tidak cukup -> kalau login tanpa centang
-    // "Ingat Saya", token disimpan di sessionStorage dan bakal tetap nyangkut
-    // walau sudah klik Keluar.
     localStorage.clear();
     sessionStorage.clear();
     navigate('/login');
@@ -51,7 +47,6 @@ export default function SidebarAdmin({ onHoverChange, isMobileOpen, setIsMobileO
 
   return (
     <>
-      {/* Overlay Gelap untuk Mobile saat Sidebar Terbuka */}
       {isMobileOpen && (
         <div 
           onClick={() => setIsMobileOpen(false)} 
@@ -70,7 +65,6 @@ export default function SidebarAdmin({ onHoverChange, isMobileOpen, setIsMobileO
         `}
       >
         <div>
-          {/* Header Logo & Tombol Close Mobile */}
           <div className="flex items-center justify-between mb-8 px-1">
             <div className="flex items-center gap-3 overflow-hidden">
               <div className="w-10 h-10 bg-[#FABD00] rounded-xl flex items-center justify-center font-bold text-slate-900 shadow-md shrink-0">
@@ -87,7 +81,6 @@ export default function SidebarAdmin({ onHoverChange, isMobileOpen, setIsMobileO
               </div>
             </div>
 
-            {/* Tombol Tutup Khusus Layar HP */}
             <button 
               onClick={() => setIsMobileOpen(false)}
               className="md:hidden p-1.5 text-slate-400 hover:text-white rounded-lg"
@@ -96,7 +89,6 @@ export default function SidebarAdmin({ onHoverChange, isMobileOpen, setIsMobileO
             </button>
           </div>
 
-          {/* Menu Navigasi */}
           <nav className="space-y-1.5">
             {menuItems.map((item) => {
               const Icon = item.icon;
@@ -104,7 +96,7 @@ export default function SidebarAdmin({ onHoverChange, isMobileOpen, setIsMobileO
                 <NavLink
                   key={item.path}
                   to={item.path}
-                  onClick={() => setIsMobileOpen(false)} // Tutup sidebar pas menu diklik di HP
+                  onClick={() => setIsMobileOpen(false)} 
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-medium transition-all group relative whitespace-nowrap ${
                       !isHovered && !isMobileOpen ? 'md:justify-center' : ''
@@ -126,7 +118,6 @@ export default function SidebarAdmin({ onHoverChange, isMobileOpen, setIsMobileO
           </nav>
         </div>
 
-        {/* Footer Sidebar */}
         <div className="space-y-2 pt-4 border-t border-slate-800/80">
           <button 
             className={`w-full py-2.5 bg-[#FABD00] hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm ${
@@ -153,7 +144,6 @@ export default function SidebarAdmin({ onHoverChange, isMobileOpen, setIsMobileO
         </div>
       </aside>
 
-      {/* ================= MODAL KONFIRMASI KELUAR ================= */}
       {showConfirm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden p-6 border border-slate-100 text-center">

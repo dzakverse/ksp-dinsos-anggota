@@ -13,10 +13,8 @@ export default function Sidebar({ isHovered }) {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // 1. State untuk kontrol buka/tutup modal konfirmasi
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // 2. Fungsi eksekusi logout
   const processLogout = () => {
     localStorage.clear();
     sessionStorage.clear();
@@ -49,7 +47,6 @@ export default function Sidebar({ isHovered }) {
             </span>
           </div>
 
-          {/* Navigasi Menu */}
           <nav className="space-y-1.5">
             {menuItems.map((item, index) => {
               const isActive = location.pathname === item.path;
@@ -68,7 +65,6 @@ export default function Sidebar({ isHovered }) {
                     {item.name}
                   </span>
                   
-                  {/* Tooltip pas sidebar ciut */}
                   {!isHovered && (
                     <div className="absolute left-full rounded-md px-2 py-1 ml-6 bg-slate-950 text-white text-xs invisible opacity-0 -translate-x-3 transition-all group-hover:visible group-hover:opacity-100 group-hover:translate-x-0 z-50 shadow-md pointer-events-none">
                       {item.name}
@@ -80,7 +76,6 @@ export default function Sidebar({ isHovered }) {
           </nav>
         </div>
 
-        {/* Tombol Logout Bawah */}
         <div className="border-t border-slate-800 pt-4">
           <button 
             onClick={() => setShowConfirm(true)}
@@ -92,7 +87,6 @@ export default function Sidebar({ isHovered }) {
         </div>
       </aside>
 
-      {/* MODAL CONFIRMATION */}
       {showConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden p-6 border border-slate-100 text-center">

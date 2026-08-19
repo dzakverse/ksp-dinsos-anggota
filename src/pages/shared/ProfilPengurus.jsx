@@ -4,11 +4,6 @@ import { ShieldCheck, Lock, Pencil, CheckCircle2, Trash2 } from 'lucide-react';
 import api from '../../services/api';
 import Avatar from '../../components/Avatar';
 
-// Sebelumnya ProfileAdmin.jsx (Bendahara) dan ProfileKetua.jsx (Ketua) adalah
-// 2 file terpisah dengan JSX yang hampir identik (~90%) - bedanya cuma:
-// path navigate ke ubah-password, daftar privilese, dan sedikit style avatar.
-// Digabung jadi 1 komponen di sini, dibedakan lewat prop `variant`, supaya
-// perubahan struktur/styling ke depannya cukup di 1 tempat.
 const PRIVILEGES = {
   BENDAHARA: [
     'Verifikasi Pengajuan Pinjaman',
@@ -48,9 +43,6 @@ export default function ProfilPengurus({ variant }) {
 
   const handlePilihFoto = () => fileInputRef.current?.click();
 
-  // Sama seperti pages/edit.jsx (Anggota) - foto disimpan lewat endpoint
-  // multipart khusus /profile/foto, dan dipakai bareng oleh Bendahara maupun
-  // Ketua karena keduanya sama-sama mengganti foto profil DIRI SENDIRI.
   const handleFotoChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -83,7 +75,6 @@ export default function ProfilPengurus({ variant }) {
     }
   };
 
-  // Hapus foto profil -> balik ke avatar inisial (lihat components/Avatar.jsx).
   const handleHapusFoto = async () => {
     if (!window.confirm('Hapus foto profil? Setelah dihapus, avatar Anda akan menampilkan inisial nama.')) {
       return;

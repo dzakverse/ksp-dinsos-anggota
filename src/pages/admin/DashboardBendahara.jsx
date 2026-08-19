@@ -21,11 +21,11 @@ export default function DashboardBendahara() {
   const [error, setError] = useState('');
   const userName = getUserName() || 'Bendahara';
 
-  // ---- Konfirmasi Penarikan Simpanan Sukarela (request dari Anggota, status PENDING) ----
+  // ---- Konfirmasi Penarikan Simpanan Sukarela (request dari Anggota, status PENDING)
   const [pendingTarik, setPendingTarik] = useState([]);
   const [loadingPending, setLoadingPending] = useState(true);
   const [errorPending, setErrorPending] = useState('');
-  const [selectedRequest, setSelectedRequest] = useState(null); // { item, actionType }
+  const [selectedRequest, setSelectedRequest] = useState(null); 
   const [catatan, setCatatan] = useState('');
   const [catatanError, setCatatanError] = useState('');
   const [processing, setProcessing] = useState(false);
@@ -81,7 +81,7 @@ export default function DashboardBendahara() {
           ? `Penarikan Rp ${Number(item.jumlah).toLocaleString('id-ID')} milik ${item.user?.nama} disetujui & saldo terpotong.`
           : `Penarikan milik ${item.user?.nama} ditolak.`
       );
-      loadDashboard(); // refresh total saldo/kas karena bisa berubah
+      loadDashboard(); 
       setTimeout(() => setToastMessage(''), 4000);
     } catch (err) {
       alert(err.response?.data?.message || 'Gagal memproses permintaan. Coba lagi.');

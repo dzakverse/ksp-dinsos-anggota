@@ -17,7 +17,6 @@ export default function EmergencyBypass() {
   const [toastMessage, setToastMessage] = useState(null);
   const [processing, setProcessing] = useState(false);
 
-  // Sekarang menyimpan SELURUH antrean, bukan cuma 1 item paling urgent
   const [antrean, setAntrean] = useState([]);
   const [totalMenunggu, setTotalMenunggu] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -30,8 +29,6 @@ export default function EmergencyBypass() {
     setLoading(true);
     api.get('/ketua/pinjaman/bypass-queue')
       .then((res) => {
-        // Dukung format response lama (res.data.urgent = 1 objek) maupun
-        // format baru (res.data.antrean = array seluruh antrean).
         const list = res.data.antrean ?? (res.data.urgent ? [res.data.urgent] : []);
         setAntrean(list);
         setTotalMenunggu(res.data.total_menunggu ?? list.length);

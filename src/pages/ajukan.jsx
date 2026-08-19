@@ -129,10 +129,6 @@ export default function Ajukan() {
     return <div className="text-center py-20 text-slate-400 text-sm">Memuat data...</div>;
   }
 
-  // Kalau masih ada pengajuan yang belum final (MENUNGGU / sudah diverifikasi
-  // Bendahara tapi belum di-ACC Ketua), jangan tampilkan form pengajuan baru
-  // sama sekali -> mencegah anggota spam pengajuan sebelum yang lama selesai
-  // diproses (lihat guard yang sama di backend store()).
   if (pengajuanPending) {
     return (
       <div className="max-w-2xl mx-auto animate-fade-in">

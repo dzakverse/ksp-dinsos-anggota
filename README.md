@@ -1,121 +1,64 @@
-# React + Vite
+# KSP Dinsos Anggota — Frontend (React + Vite)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend aplikasi koperasi simpan pinjam untuk pegawai Dinsos. React 19 + Vite + Tailwind v4,
+konsumsi REST API dari backend Laravel (`ksp-backend`). Autentikasi berbasis token via
+Laravel Sanctum (lihat `src/services/api.js`).
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-
-# Backend Starter — KSP Sejahtera (Laravel + MySQL)
-
-File-file di sini adalah **kode siap-pakai**, bukan project Laravel penuh (composer
-tidak bisa dijalankan di sandbox ini). Ikuti langkah di bawah untuk memasangnya.
-
-## 1. Buat project Laravel baru
+## 1. Instalasi
 
 ```bash
-composer create-project laravel/laravel ksp-backend
-cd ksp-backend
-composer require laravel/sanctum
+npm install
 ```
 
-## 2. Salin file dari folder ini ke project Laravel
+## 2. Setup environment
 
-| Dari folder ini                          | Ke project Laravel                              |
-|-------------------------------------------|--------------------------------------------------|
-| `database/migrations/*.php`               | `database/migrations/`                            |
-| `app/Models/*.php`                        | `app/Models/`                                     |
-| `app/Http/Controllers/Api/*.php`          | `app/Http/Controllers/Api/`                       |
-| `app/Http/Middleware/CheckRole.php`       | `app/Http/Middleware/`                            |
-| `routes/api.php`                          | `routes/api.php` (replace/merge)                  |
-
-## 3. Daftarkan middleware `role`
-
-Di `bootstrap/app.php` (Laravel 11+), tambahkan di dalam `->withMiddleware()`:
-
-```php
-$middleware->alias([
-    'role' => \App\Http\Middleware\CheckRole::class,
-]);
-```
-
-## 4. Setup .env & database
+Buat/edit file `.env` di root project:
 
 ```env
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=ksp_sejahtera
-DB_USERNAME=root
-DB_PASSWORD=
-
-SANCTUM_STATEFUL_DOMAINS=localhost:5173
-SESSION_DOMAIN=localhost
-FRONTEND_URL=http://localhost:5173
+VITE_API_URL=http://127.0.0.1:8000/api
 ```
 
-Buat database `ksp_sejahtera` di MySQL, lalu:
+Sesuaikan URL kalau backend Laravel jalan di host/port lain. Pastikan juga backend sudah
+mengaktifkan CORS untuk origin dev server ini (default Vite: `http://localhost:5173`) —
+lihat README backend bagian "Aktifkan CORS".
+
+## 3. Jalankan dev server
 
 ```bash
-php artisan migrate
+npm run dev
+# -> http://localhost:5173
 ```
 
-## 5. Aktifkan CORS (WAJIB biar FE bisa akses)
+Build production: `npm run build` (output ke `dist/`). Preview build: `npm run preview`.
 
-Publish config CORS bawaan Laravel lalu edit `config/cors.php`:
+## Struktur halaman
 
-```php
-'paths' => ['api/*'],
-'allowed_methods' => ['*'],
-'allowed_origins' => ['http://localhost:5173'], // ganti sesuai URL FE
-'allowed_headers' => ['*'],
-'supports_credentials' => true,
-```
+| Path | Untuk role | Isi |
+|---|---|---|
+| `pages/login.jsx` | public | Login (NIP + password) |
+| `pages/dashboard.jsx` | ANGGOTA | Beranda / ringkasan simpanan & pinjaman aktif |
+| `pages/simpananku.jsx` | ANGGOTA | Riwayat simpanan, ajukan tarik simpanan |
+| `pages/pinjaman.jsx` | ANGGOTA | Riwayat & status pinjaman |
+| `pages/ajukan.jsx` | ANGGOTA | Form ajukan pinjaman baru / top-up |
+| `pages/profil.jsx`, `edit.jsx`, `sandi.jsx` | ANGGOTA | Profil & ubah password |
+| `pages/admin/DashboardBendahara.jsx` | BENDAHARA/KETUA | Ringkasan operasional |
+| `pages/admin/DataAnggota.jsx`, `DetailAnggota.jsx` | BENDAHARA/KETUA | Kelola data & simpanan anggota |
+| `pages/admin/VerifikasiPinjaman.jsx`, `VerifikasiDetail.jsx` | BENDAHARA/KETUA | Verifikasi pengajuan pinjaman |
+| `pages/admin/KasKoperasi.jsx` | BENDAHARA/KETUA | Riwayat & tarik kas koperasi |
+| `pages/admin/ProfileAdmin.jsx`, `UbahPassword.jsx` | BENDAHARA/KETUA | Profil & ubah password |
+| `pages/ketua/DashboardKetua.jsx` | KETUA | Ringkasan + audit log |
+| `pages/ketua/PersetujuanPinjaman.jsx` | KETUA | Persetujuan final pinjaman |
+| `pages/ketua/EmergencyBypass.jsx` | KETUA | Bypass approval darurat |
+| `pages/ketua/KendaliKebijakan.jsx` | KETUA | Atur plafon, suku bunga, minimal progress top-up |
+| `pages/ketua/PengurusAnggota.jsx` | KETUA | Kelola akun Bendahara/Ketua |
+| `pages/shared/ProfilPengurus.jsx`, `UbahPasswordPengurus.jsx` | BENDAHARA/KETUA | Komponen profil/password bersama |
 
-## 6. Seeder akun demo (opsional, biar sama kayak data/user.js lama)
+`src/services/api.js` berisi instance axios terpusat (base URL dari `VITE_API_URL`, header
+Authorization otomatis) — semua pemanggilan API di halaman-halaman di atas lewat sini.
 
-```bash
-php artisan tinker
-```
-```php
-\App\Models\User::create(['nip' => 'anggota', 'password' => bcrypt('123'), 'nama' => 'Budi Santoso', 'role' => 'ANGGOTA', 'id_anggota' => 'ANG-2024-001']);
-\App\Models\User::create(['nip' => 'bendahara', 'password' => bcrypt('123'), 'nama' => 'Siti Aminah', 'role' => 'BENDAHARA']);
-\App\Models\User::create(['nip' => 'ketua', 'password' => bcrypt('123'), 'nama' => 'Drs. H. Ahmad', 'role' => 'KETUA']);
-```
+## Catatan integrasi backend
 
-## 7. Jalankan server
-
-```bash
-php artisan serve
-# -> http://127.0.0.1:8000
-```
-
-API sekarang bisa diakses di `http://127.0.0.1:8000/api/...` — lihat `routes/api.php`
-untuk daftar lengkap endpoint dan halaman FE mana yang memakainya.
-
-## Endpoint yang sudah dibuatkan
-
-| Method | Endpoint                              | Dipakai di FE                          | Role         |
-|--------|-----------------------------------------|-----------------------------------------|--------------|
-| POST   | /api/login                              | pages/login.jsx                         | public       |
-| GET    | /api/me                                 | validasi token saat reload              | semua login  |
-| POST   | /api/logout                             | tombol logout                           | semua login  |
-| GET    | /api/simpanan                           | pages/dashboard.jsx, simpananku.jsx     | ANGGOTA      |
-| GET    | /api/pinjaman                           | pages/pinjaman.jsx                      | ANGGOTA      |
-| POST   | /api/pinjaman                           | pages/ajukan.jsx                        | ANGGOTA      |
-| GET    | /api/admin/pinjaman                     | pages/admin/VerifikasiPinjaman.jsx      | BENDAHARA/KETUA |
-| POST   | /api/admin/pinjaman/{id}/verifikasi     | pages/admin/VerifikasiDetail.jsx        | BENDAHARA/KETUA |
-| POST   | /api/ketua/pinjaman/{id}/persetujuan    | pages/ketua/PersetujuanPinjaman.jsx     | KETUA        |
-
-Halaman lain (DataAnggota, KendaliKebijakan, EmergencyBypass, PengurusAnggota, dll)
-belum dibuatkan endpoint-nya — pola controller di atas bisa langsung dicontek/di-copy
-untuk bikin yang baru sesuai kebutuhan.
+- Panel **Super Admin** (audit & operasional darurat) berada di sisi backend Laravel/Filament
+  (`/admin`), **bukan** bagian dari aplikasi React ini — lihat README backend.
+- Daftar lengkap endpoint API dan halaman FE mana yang memakainya ada di README backend,
+  bagian "Endpoint API".

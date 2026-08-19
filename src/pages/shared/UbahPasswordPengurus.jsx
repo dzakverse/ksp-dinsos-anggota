@@ -3,10 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { RotateCcw, Eye, EyeOff, Info, ArrowLeft, AlertCircle } from 'lucide-react';
 import api from '../../services/api';
 
-// Sebelumnya UbahPassword.jsx (Bendahara) dan UbahPasswordKetua.jsx (Ketua)
-// adalah 2 file terpisah yang ~99% identik - satu-satunya beda cuma path
-// navigate kembali ke halaman profil (/admin/profile vs /ketua/profile).
-// Digabung jadi 1 komponen di sini, dibedakan lewat prop `variant`.
 export default function UbahPasswordPengurus({ variant }) {
   const navigate = useNavigate();
   const basePath = variant === 'KETUA' ? '/ketua' : '/admin';
@@ -55,9 +51,6 @@ export default function UbahPasswordPengurus({ variant }) {
       });
 
       alert('Password berhasil diperbarui! Sesi Anda telah berakhir, silakan login kembali.');
-      // localStorage.clear() saja tidak cukup -> kalau login tanpa centang
-      // "Ingat Saya", token disimpan di sessionStorage dan akan tetap
-      // nyangkut walau sudah ganti password & "logout".
       localStorage.clear();
       sessionStorage.clear();
       navigate('/login', { replace: true });

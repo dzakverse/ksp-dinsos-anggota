@@ -48,16 +48,11 @@ export default function EditProfil() {
     }
   };
 
-  // Upload foto langsung begitu file dipilih (terpisah dari form "Simpan
-  // Perubahan" di atas, karena foto disimpan lewat endpoint khusus multipart
-  // /profile/foto, bukan lewat body JSON PUT /profile).
   const handleFotoChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setFotoError('');
 
-    // Validasi ringan di sisi client biar user cepat dapat feedback -
-    // validasi yang menentukan tetap di backend (lihat ProfileController::updateFoto).
     const tipeValid = ['image/jpeg', 'image/jpg', 'image/png'].includes(file.type);
     if (!tipeValid) {
       setFotoError('Format file harus JPG atau PNG.');
@@ -85,9 +80,6 @@ export default function EditProfil() {
     }
   };
 
-  // Hapus foto profil -> balik ke avatar inisial (lihat components/Avatar.jsx).
-  // Dipisah dari handleFotoChange karena ini aksi destruktif tersendiri, bukan
-  // bagian dari alur ganti/upload foto.
   const handleHapusFoto = async () => {
     if (!window.confirm('Hapus foto profil? Setelah dihapus, avatar Anda akan menampilkan inisial nama.')) {
       return;

@@ -27,10 +27,6 @@ const handleLogin = async (e) => {
         password: password,
       });
 
-      // "Ingat Saya" dicentang -> simpan di localStorage (persist walau browser
-      // ditutup). Tidak dicentang -> simpan di sessionStorage (otomatis hilang
-      // begitu tab/browser ditutup). Storage yang tidak dipakai dibersihkan
-      // dulu supaya tidak ada token basi nyangkut di storage yang lain.
       const storage = rememberMe ? localStorage : sessionStorage;
       const storageLain = rememberMe ? sessionStorage : localStorage;
 

@@ -3,8 +3,6 @@ import { Calendar, User, Clock, CheckCircle, XCircle } from 'lucide-react';
 import api from '../services/api';
 import { formatRupiah, formatTanggal } from '../utils/format';
 
-// Warna badge status ditentukan dari teks status itu sendiri (bukan dari arah uang),
-// supaya konsisten untuk semua kategori transaksi (Simpanan maupun Pinjaman).
 const statusTone = (status) => {
   const s = (status || '').toUpperCase();
   if (s.includes('MENUNGGU') || s === 'PENDING') return 'pending';

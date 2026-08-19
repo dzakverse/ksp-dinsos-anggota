@@ -64,9 +64,6 @@ export default function VerifikasiPinjaman() {
 
       <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-wrap items-end gap-4">
 
-        {/* Filter Status: sebelumnya state `filterStatus` sudah dikirim ke backend
-            (backend sudah support query ?status=) tapi tidak ada dropdown untuk
-            men-set-nya di UI -> state ini selama ini nganggur, selalu kosong. */}
         <div className="flex-1 min-w-[200px]">
           <label className="block text-xs font-bold text-slate-700 mb-1.5">Filter Status</label>
           <select

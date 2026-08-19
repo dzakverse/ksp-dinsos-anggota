@@ -35,13 +35,6 @@ import PengurusAnggota from './pages/ketua/PengurusAnggota';
 import ProfileKetua from './pages/ketua/ProfileKetua';
 import UbahPasswordKetua from './pages/ketua/UbahPasswordKetua';
 
-// 4. PROTECTED ROUTE HELPERS (Pengaman Akses)
-// PENTING: pakai getToken()/getUserRole() dari services/api.js (cek localStorage
-// MAUPUN sessionStorage), JANGAN akses localStorage langsung di sini. Kalau akses
-// langsung, user yang login TANPA centang "Ingat Saya" (token disimpan di
-// sessionStorage) akan selalu dianggap belum login oleh guard ini begitu pindah
-// halaman/refresh, walau API call lain tetap jalan normal (karena axios
-// interceptor di api.js sudah benar ceknya).
 const ProtectedUserRoute = ({ children }) => {
   const token = getToken();
   if (!token) return <Navigate to="/login" replace />;
@@ -74,11 +67,8 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        {/* ================= 1. PUBLIC ROUTE ================= */}
         <Route path="/login" element={<Login />} />
 
-        {/* ================= 2. ROUTES USER / ANGGOTA ================= */}
-        {/* Semua halaman di bawah ini otomatis dibungkus <Layout> milik User */}
         <Route
           element={
             <ProtectedUserRoute>
@@ -95,8 +85,6 @@ export default function App() {
           <Route path="/sandi" element={<Sandi />} />
         </Route>
 
-        {/* ================= 3. ROUTES ADMIN / BENDAHARA ================= */}
-        {/* Semua halaman di bawah ini otomatis dibungkus <AdminLayout> */}
         <Route
           path="/admin"
           element={
@@ -105,11 +93,9 @@ export default function App() {
             </ProtectedAdminRoute>
           }
         >
-          {/* Mengarahkan /admin langsung ke /admin/dashboard */}
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardBendahara />} />
           
-          {/* Placeholder Halaman Admin Lainnya */}
           <Route path="verifikasi" element={<VerifikasiPinjaman/>} />
           <Route path="verifikasi/:id" element={<VerifikasiDetail />} />
           <Route path="anggota" element={<DataAnggota/>} />
@@ -119,11 +105,9 @@ export default function App() {
           <Route path="profile/ubah-password" element={<UbahPassword />} />
         </Route>
 
-        {/* ================= 4. REDIRECTS ================= */}
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
 
-        {/* ROUTE KETUA */}
         <Route
           path="/ketua"
           element={

@@ -69,12 +69,6 @@ export default function DataAnggota() {
 
         <div className="bg-[#0A1128] text-white rounded-2xl p-6 shadow-md flex flex-col justify-between">
           <div>
-            {/* Label diubah dari "ANGGOTA AKTIF" -> "TOTAL ANGGOTA": endpoint
-                /admin/anggota (dan `data.total` di sini) tidak difilter
-                status_keanggotaan, jadi angkanya termasuk anggota NONAKTIF juga.
-                Sebelumnya label ini menyesatkan karena beda definisi dengan
-                "Anggota Aktif" di Dashboard Bendahara/Ketua yang memang sudah
-                difilter AKTIF (lihat DashboardController::adminIndex). */}
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
               TOTAL ANGGOTA
             </span>
