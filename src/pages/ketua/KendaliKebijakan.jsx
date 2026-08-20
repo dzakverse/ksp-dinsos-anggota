@@ -3,6 +3,7 @@ import {
   Wallet,
   Percent,
   PiggyBank,
+  Coins,
   Info,
   RotateCcw,
   CheckCircle2,
@@ -21,10 +22,11 @@ export default function KendaliKebijakan() {
 
   const [maxLoan, setMaxLoan] = useState('0');
   const [interestRate, setInterestRate] = useState('0');
+  const [principalSavings, setPrincipalSavings] = useState('0');
   const [mandatorySavings, setMandatorySavings] = useState('0');
   const [minimalTopup, setMinimalTopup] = useState('30');
 
-  const [activeModal, setActiveModal] = useState(null); // 'loan' | 'interest' | 'savings' | 'topup' | null
+  const [activeModal, setActiveModal] = useState(null); // 'loan' | 'interest' | 'pokok_savings' | 'savings' | 'topup' | null
   const [notes, setNotes] = useState('');
   const [successToast, setSuccessToast] = useState(false);
 
@@ -35,6 +37,7 @@ export default function KendaliKebijakan() {
         setKebijakan(res.data);
         setMaxLoan(String(Math.round(res.data.plafon_maksimal)));
         setInterestRate(String(res.data.suku_bunga_persen));
+        setPrincipalSavings(String(Math.round(res.data.simpanan_pokok_nominal)));
         setMandatorySavings(String(Math.round(res.data.simpanan_wajib_nominal)));
         setMinimalTopup(String(res.data.minimal_progress_topup_persen));
       })
@@ -55,6 +58,7 @@ export default function KendaliKebijakan() {
       const payload = { catatan_terakhir: notes || undefined };
       if (activeModal === 'loan') payload.plafon_maksimal = Number(maxLoan);
       if (activeModal === 'interest') payload.suku_bunga_persen = Number(interestRate);
+      if (activeModal === 'pokok_savings') payload.simpanan_pokok_nominal = Number(principalSavings);
       if (activeModal === 'savings') payload.simpanan_wajib_nominal = Number(mandatorySavings);
       if (activeModal === 'topup') payload.minimal_progress_topup_persen = Number(minimalTopup);
 
@@ -199,7 +203,53 @@ export default function KendaliKebijakan() {
         </div>
       </div>
 
-      {/* CARD 3: MANDATORY SAVINGS */}
+      {/* CARD 3: PRINCIPAL SAVINGS (SIMPANAN POKOK) */}
+      <div className="bg-white border-2 border-amber-400 rounded-2xl p-6 shadow-xs relative overflow-hidden transition-all">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-slate-900 flex items-center justify-center border border-blue-100/80">
+              <Coins size={20} />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Nominal Simpanan Pokok</h2>
+              <p className="text-xs text-slate-500">Minimal setoran pokok saat anggota pertama kali bergabung.</p>
+            </div>
+          </div>
+          <Info size={18} className="text-slate-400" />
+        </div>
+
+        <div className="mt-5 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+          <div className="md:col-span-8">
+            <label className="text-[11px] font-bold text-slate-500 block mb-1.5">Nominal Minimal Baru (Rp)</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-900">Rp</span>
+              <input
+                type="text"
+                value={formatRupiahInput(principalSavings)}
+                onChange={(e) => setPrincipalSavings(e.target.value.replace(/\D/g, '') || '0')}
+                className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-lg font-extrabold text-slate-900 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+              />
+            </div>
+          </div>
+          <div className="md:col-span-4 md:self-end">
+            <button
+              type="button"
+              onClick={() => setActiveModal('pokok_savings')}
+              className="w-full bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold text-xs py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
+            >
+              <RotateCcw size={16} />
+              <span>Update Sekarang</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-5 pt-4 border-t border-slate-100 flex items-center gap-2 text-xs text-slate-500">
+          <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
+          <span>Nilai saat ini: <strong className="text-slate-800">{formatRupiah(kebijakan.simpanan_pokok_nominal)}</strong> — Bendahara tidak bisa input setoran pokok di bawah nilai ini.</span>
+        </div>
+      </div>
+
+      {/* CARD 4: MANDATORY SAVINGS */}
       <div className="bg-white border-2 border-amber-400 rounded-2xl p-6 shadow-xs relative overflow-hidden transition-all">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3.5">
@@ -245,7 +295,7 @@ export default function KendaliKebijakan() {
         </div>
       </div>
 
-      {/* CARD 4: MINIMAL PROGRESS TOP-UP */}
+      {/* CARD 5: MINIMAL PROGRESS TOP-UP */}
       <div className="bg-white border-2 border-amber-400 rounded-2xl p-6 shadow-xs relative overflow-hidden transition-all">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3.5">
@@ -318,6 +368,7 @@ export default function KendaliKebijakan() {
                   <span className="font-bold text-slate-900 uppercase">
                     {activeModal === 'loan' && 'Plafon Maksimal Pinjaman'}
                     {activeModal === 'interest' && 'Suku Bunga Pinjaman (%)'}
+                    {activeModal === 'pokok_savings' && 'Nominal Simpanan Pokok'}
                     {activeModal === 'savings' && 'Nominal Simpanan Wajib'}
                     {activeModal === 'topup' && 'Syarat Minimal Top-Up (%)'}
                   </span>
@@ -328,6 +379,7 @@ export default function KendaliKebijakan() {
                   <span className="font-semibold text-rose-600 line-through">
                     {activeModal === 'loan' && formatRupiah(kebijakan.plafon_maksimal)}
                     {activeModal === 'interest' && `${kebijakan.suku_bunga_persen}%`}
+                    {activeModal === 'pokok_savings' && formatRupiah(kebijakan.simpanan_pokok_nominal)}
                     {activeModal === 'savings' && formatRupiah(kebijakan.simpanan_wajib_nominal)}
                     {activeModal === 'topup' && `${kebijakan.minimal_progress_topup_persen}%`}
                   </span>
@@ -338,6 +390,7 @@ export default function KendaliKebijakan() {
                   <span className="font-black text-emerald-600 text-sm">
                     {activeModal === 'loan' && `Rp ${formatRupiahInput(maxLoan)}`}
                     {activeModal === 'interest' && `${interestRate}%`}
+                    {activeModal === 'pokok_savings' && `Rp ${formatRupiahInput(principalSavings)}`}
                     {activeModal === 'savings' && `Rp ${formatRupiahInput(mandatorySavings)}`}
                     {activeModal === 'topup' && `${minimalTopup}%`}
                   </span>
