@@ -110,8 +110,10 @@ export default function PengurusAnggota() {
       setNominalSimpanan('');
       setCatatanSimpanan('');
       loadAnggota();
-    } catch {
-      alert('Gagal menyimpan transaksi.');
+    } catch (err) {
+      const errors = err.response?.data?.errors;
+      const pesanField = errors ? Object.values(errors)[0]?.[0] : null;
+      alert(pesanField || err.response?.data?.message || 'Gagal menyimpan transaksi.');
     } finally {
       setSubmitting(false);
     }

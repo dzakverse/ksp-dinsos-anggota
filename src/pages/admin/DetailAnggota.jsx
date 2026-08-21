@@ -97,7 +97,9 @@ export default function DetailAnggota() {
       setKeterangan('');
       fetchAnggota();
     } catch (err) {
-      alert(err.response?.data?.message || 'Gagal menyimpan transaksi. Coba lagi.');
+      const errors = err.response?.data?.errors;
+      const pesanField = errors ? Object.values(errors)[0]?.[0] : null;
+      alert(pesanField || err.response?.data?.message || 'Gagal menyimpan transaksi. Coba lagi.');
       setShowModal(false);
     } finally {
       setSubmitting(false);
